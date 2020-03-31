@@ -17,14 +17,8 @@
 package jp.co.recruit_lifestyle.android.floatingview;
 
 
-/**
- * FloatingViewのリスナです。
- */
 public interface FloatingViewListener {
 
-    /**
-     * FloatingViewを終了する際に呼び出されます。
-     */
     void onFinishFloatingView();
 
     /**

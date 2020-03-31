@@ -24,43 +24,20 @@ import jp.co.recruit_lifestyle.android.floatingview.FloatingViewListener;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewManager;
 import jp.co.recruit_lifestyle.sample.DeleteActionActivity;
 
-/**
- * FloatingViewのカスタマイズを行います。
- * サンプルとしてクリック時にはメールアプリを起動します。
- */
 public class CustomFloatingViewService extends Service implements FloatingViewListener {
 
-    /**
-     * Intent key (Cutout safe area)
-     */
     public static final String EXTRA_CUTOUT_SAFE_AREA = "cutout_safe_area";
 
-    /**
-     * 通知ID
-     */
     private static final int NOTIFICATION_ID = 908114;
 
-    /**
-     * Prefs Key(Last position X)
-     */
     private static final String PREF_KEY_LAST_POSITION_X = "last_position_x";
 
-    /**
-     * Prefs Key(Last position Y)
-     */
     private static final String PREF_KEY_LAST_POSITION_Y = "last_position_y";
 
-    /**
-     * FloatingViewManager
-     */
     private FloatingViewManager mFloatingViewManager;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // 既にManagerが存在していたら何もしない
         if (mFloatingViewManager != null) {
             return START_STICKY;
         }
@@ -73,7 +50,6 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
         iconView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // メールアプリの起動
                 final Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", getString(R.string.mail_address), null));
                 intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.mail_title));
                 intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.mail_content));
@@ -92,41 +68,28 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
         final FloatingViewManager.Options options = loadOptions(metrics);
         mFloatingViewManager.addViewToWindow(iconView, options);
 
-        // 常駐起動
         startForeground(NOTIFICATION_ID, createNotification(this));
 
         return START_REDELIVER_INTENT;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onDestroy() {
         destroy();
         super.onDestroy();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onFinishFloatingView() {
         stopSelf();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onTouchFinished(boolean isFinishing, int x, int y) {
         if (!isFinishing) {
@@ -138,9 +101,6 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
         }
     }
 
-    /**
-     * Viewを破棄します。
-     */
     private void destroy() {
         if (mFloatingViewManager != null) {
             mFloatingViewManager.removeAllViewToWindow();
@@ -148,9 +108,6 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
         }
     }
 
-    /**
-     * 通知を表示します。
-     */
     private static Notification createNotification(Context context) {
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(context, context.getString(R.string.default_floatingview_channel_id));
         builder.setWhen(System.currentTimeMillis());
@@ -161,7 +118,7 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
         builder.setPriority(NotificationCompat.PRIORITY_MIN);
         builder.setCategory(NotificationCompat.CATEGORY_SERVICE);
 
-        // PendingIntent作成
+        // PendingIntent
         final Intent notifyIntent = new Intent(context, DeleteActionActivity.class);
         PendingIntent notifyPendingIntent = PendingIntent.getActivity(context, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         builder.setContentIntent(notifyPendingIntent);
@@ -169,9 +126,6 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
         return builder.build();
     }
 
-    /**
-     * 動的に変更可能なオプションを読み込みます。
-     */
     private void loadDynamicOptions() {
         final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -186,18 +140,12 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
 
     }
 
-    /**
-     * FloatingViewのオプションを読み込みます。
-     *
-     * @param metrics X/Y座標の設定に利用するDisplayMetrics
-     * @return Options
-     */
     private FloatingViewManager.Options loadOptions(DisplayMetrics metrics) {
         final FloatingViewManager.Options options = new FloatingViewManager.Options();
         final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 
         // Shape
-        final String shapeSettings = sharedPref.getString("settings_shape", "");
+        final String shapeSettings = sharedPref.getString("settings_shape", "Rectangle");
         if ("Circle".equals(shapeSettings)) {
             options.shape = FloatingViewManager.SHAPE_CIRCLE;
         } else if ("Rectangle".equals(shapeSettings)) {
@@ -225,7 +173,8 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
         }
 
         options.usePhysics = sharedPref.getBoolean("settings_use_physics", true);
-
+//        options.floatingViewHeight = options.floatingViewHeight * 6;
+//        options.floatingViewWidth = options.floatingViewWidth * 6;
         // Last position
         final boolean isUseLastPosition = sharedPref.getBoolean("settings_save_last_position", false);
         if (isUseLastPosition) {
@@ -239,8 +188,8 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
             final String initYSettings = sharedPref.getString("settings_init_y", "");
             if (!TextUtils.isEmpty(initXSettings) && !TextUtils.isEmpty(initYSettings)) {
                 final int offset = (int) (48 + 8 * metrics.density);
-                options.floatingViewX = (int) (metrics.widthPixels * Float.parseFloat(initXSettings) - offset);
-                options.floatingViewY = (int) (metrics.heightPixels * Float.parseFloat(initYSettings) - offset);
+                options.floatingViewX = 3 * (int) (metrics.widthPixels * Float.parseFloat(initXSettings) - offset);
+                options.floatingViewY = 3 * (int) (metrics.heightPixels * Float.parseFloat(initYSettings) - offset);
             }
         }
 

@@ -18,38 +18,18 @@ import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewListener;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewManager;
 
-
-/**
- * ChatHead Service
- */
 public class ChatHeadService extends Service implements FloatingViewListener {
 
-    /**
-     * デバッグログ用のタグ
-     */
     private static final String TAG = "ChatHeadService";
 
-    /**
-     * Intent key (Cutout safe area)
-     */
     public static final String EXTRA_CUTOUT_SAFE_AREA = "cutout_safe_area";
 
-    /**
-     * 通知ID
-     */
     private static final int NOTIFICATION_ID = 9083150;
 
-    /**
-     * FloatingViewManager
-     */
     private FloatingViewManager mFloatingViewManager;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // 既にManagerが存在していたら何もしない
         if (mFloatingViewManager != null) {
             return START_STICKY;
         }
@@ -74,41 +54,28 @@ public class ChatHeadService extends Service implements FloatingViewListener {
         options.overMargin = (int) (16 * metrics.density);
         mFloatingViewManager.addViewToWindow(iconView, options);
 
-        // 常駐起動
         startForeground(NOTIFICATION_ID, createNotification(this));
 
         return START_REDELIVER_INTENT;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onDestroy() {
         destroy();
         super.onDestroy();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onFinishFloatingView() {
         stopSelf();
         Log.d(TAG, getString(R.string.finish_deleted));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onTouchFinished(boolean isFinishing, int x, int y) {
         if (isFinishing) {
@@ -118,9 +85,6 @@ public class ChatHeadService extends Service implements FloatingViewListener {
         }
     }
 
-    /**
-     * Viewを破棄します。
-     */
     private void destroy() {
         if (mFloatingViewManager != null) {
             mFloatingViewManager.removeAllViewToWindow();
@@ -128,10 +92,6 @@ public class ChatHeadService extends Service implements FloatingViewListener {
         }
     }
 
-    /**
-     * 通知を表示します。
-     * クリック時のアクションはありません。
-     */
     private static Notification createNotification(Context context) {
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(context, context.getString(R.string.default_floatingview_channel_id));
         builder.setWhen(System.currentTimeMillis());

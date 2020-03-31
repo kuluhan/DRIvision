@@ -7,19 +7,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.fragment.DeleteActionFragment;
 
-/**
- * 通知から起動後に削除アクションを行う画面です。
- */
 public class DeleteActionActivity extends AppCompatActivity {
 
-    /**
-     * 設定フラグメントのタグ
-     */
     private static final String FRAGMENT_TAG_DELETE_ACTION = "delete_action";
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

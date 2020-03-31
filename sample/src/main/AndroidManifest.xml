@@ -1,8 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="jp.co.recruit.floatingview">
 
-
-    <!-- 最前面表示時のパーミッション -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Foreground Service permission(API level 28 or higher) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -22,17 +20,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- デモ画面 -->
         <activity
             android:name="jp.co.recruit_lifestyle.sample.DeleteActionActivity"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
             android:taskAffinity="jp.co.recruit.floatingview.ChatHeadActivity" />
-        <!-- デモ表示サービス -->
         <service
             android:name="jp.co.recruit_lifestyle.sample.service.ChatHeadService"
             android:exported="false" />
-        <!-- カスタムデモ表示サービス -->
         <service
             android:name="jp.co.recruit_lifestyle.sample.service.CustomFloatingViewService"
             android:exported="false" />

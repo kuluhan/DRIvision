@@ -16,10 +16,6 @@
 
 package jp.co.recruit_lifestyle.android.floatingview;
 
-/**
- * TrashViewのイベントを扱うリスナです。
- * INFO:削除アイコンが追従する仕様のため、OPENアニメーションのアニメーション終了は通知されません。
- */
 interface TrashViewListener {
 
     /**
@@ -27,18 +23,8 @@ interface TrashViewListener {
      */
     void onUpdateActionTrashIcon();
 
-    /**
-     * アニメーションを開始した時に通知されます。
-     *
-     * @param animationCode アニメーションコード
-     */
     void onTrashAnimationStarted(int animationCode);
 
-    /**
-     * アニメーションが終了した時に通知されます。
-     *
-     * @param animationCode アニメーションコード
-     */
     void onTrashAnimationEnd(int animationCode);
 
 

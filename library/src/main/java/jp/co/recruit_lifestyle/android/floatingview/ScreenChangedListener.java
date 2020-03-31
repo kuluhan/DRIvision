@@ -18,15 +18,6 @@ package jp.co.recruit_lifestyle.android.floatingview;
 
 import android.graphics.Rect;
 
-/**
- * スクリーンの変化を扱うリスナです。
- */
 interface ScreenChangedListener {
-    /**
-     * スクリーンが変化した時に呼び出されます。
-     *
-     * @param windowRect System window rect
-     * @param visibility System UI Mode
-     */
     void onScreenChanged(Rect windowRect, int visibility);
 }
