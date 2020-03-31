@@ -283,11 +283,6 @@ class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawList
         }
     }
 
-    /**
-     * コンストラクタ
-     *
-     * @param context {@link android.content.Context}
-     */
     FloatingView(final Context context) {
         super(context);
         mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
