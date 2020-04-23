@@ -58,6 +58,7 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
             }
         });
 
+
         mFloatingViewManager = new FloatingViewManager(this, this);
         mFloatingViewManager.setFixedTrashIconImage(R.drawable.ic_trash_fixed);
         mFloatingViewManager.setActionTrashIconImage(R.drawable.ic_trash_action);
@@ -110,6 +111,7 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
 
     private static Notification createNotification(Context context) {
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(context, context.getString(R.string.default_floatingview_channel_id));
+
         builder.setWhen(System.currentTimeMillis());
         builder.setSmallIcon(R.mipmap.ic_launcher);
         builder.setContentTitle(context.getString(R.string.mail_content_title));

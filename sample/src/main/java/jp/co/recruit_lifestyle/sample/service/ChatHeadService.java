@@ -27,6 +27,10 @@ public class ChatHeadService extends Service implements FloatingViewListener {
     private static final int NOTIFICATION_ID = 9083150;
 
     private FloatingViewManager mFloatingViewManager;
+    private ImageView iconView;
+    private LayoutInflater inflater;
+    private FloatingViewManager.Options options;
+    private DisplayMetrics metrics;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -34,11 +38,14 @@ public class ChatHeadService extends Service implements FloatingViewListener {
             return START_STICKY;
         }
 
-        final DisplayMetrics metrics = new DisplayMetrics();
+        //final DisplayMetrics metrics = new DisplayMetrics();
+        metrics = new DisplayMetrics();
         final WindowManager windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         windowManager.getDefaultDisplay().getMetrics(metrics);
-        final LayoutInflater inflater = LayoutInflater.from(this);
-        final ImageView iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
+        //final LayoutInflater inflater = LayoutInflater.from(this);
+        //final ImageView iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
+        inflater = LayoutInflater.from(this);
+        iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
         iconView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -50,7 +57,8 @@ public class ChatHeadService extends Service implements FloatingViewListener {
         mFloatingViewManager.setFixedTrashIconImage(R.drawable.ic_trash_fixed);
         mFloatingViewManager.setActionTrashIconImage(R.drawable.ic_trash_action);
         mFloatingViewManager.setSafeInsetRect((Rect) intent.getParcelableExtra(EXTRA_CUTOUT_SAFE_AREA));
-        final FloatingViewManager.Options options = new FloatingViewManager.Options();
+        //final FloatingViewManager.Options options = new FloatingViewManager.Options();
+        options = new FloatingViewManager.Options();
         options.overMargin = (int) (16 * metrics.density);
         mFloatingViewManager.addViewToWindow(iconView, options);
 
@@ -102,6 +110,44 @@ public class ChatHeadService extends Service implements FloatingViewListener {
         builder.setPriority(NotificationCompat.PRIORITY_MIN);
         builder.setCategory(NotificationCompat.CATEGORY_SERVICE);
 
+
         return builder.build();
+    }
+
+    public void changeSpeedSign(int speedLimit){
+        switch(speedLimit) {
+            case 1:
+                iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
+                break;
+            case 2:
+                iconView = (ImageView) inflater.inflate(R.layout.speed_30, null, false);
+                break;
+            case 3:
+                iconView = (ImageView) inflater.inflate(R.layout.speed_50, null, false);
+                break;
+            case 4:
+                iconView = (ImageView) inflater.inflate(R.layout.speed_60, null, false);
+                break;
+            case 5:
+                iconView = (ImageView) inflater.inflate(R.layout.speed_70, null, false);
+                break;
+            case 6:
+                iconView = (ImageView) inflater.inflate(R.layout.speed_80, null, false);
+                break;
+            case 7:
+                iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
+                break;
+            case 8:
+                iconView = (ImageView) inflater.inflate(R.layout.speed_100, null, false);
+                break;
+            case 9:
+                iconView = (ImageView) inflater.inflate(R.layout.speed_120, null, false);
+                break;
+            default:
+                iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
+        }
+        options = new FloatingViewManager.Options();
+        options.overMargin = (int) (16 * metrics.density);
+        mFloatingViewManager.addViewToWindow(iconView, options);
     }
 }

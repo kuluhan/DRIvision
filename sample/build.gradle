@@ -15,9 +15,29 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    aaptOptions {
+        noCompress "tflite"
+        noCompress "lite"
+        //noCompress "pb"
+    }
+    compileOptions {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+    }
+    lintOptions {
+        abortOnError false
+    }
 }
+
+// import DownloadModels task
+project.ext.ASSET_DIR = projectDir.toString() + '/src/main/assets'
 
 dependencies {
     implementation 'androidx.legacy:legacy-preference-v14:1.0.0'
     implementation project(':library')
+    implementation fileTree(dir: 'libs', include: ['*.jar','*.aar'])
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.0.0'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
 }

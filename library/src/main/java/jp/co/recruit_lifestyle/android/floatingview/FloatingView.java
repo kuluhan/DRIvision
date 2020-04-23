@@ -644,6 +644,7 @@ class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawList
             return false;
         }
 
+        /*
         try {
             System.out.println("hello");
             Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
@@ -652,6 +653,8 @@ class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawList
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+         */
 
         mScreenTouchX = event.getRawX();
         mScreenTouchY = event.getRawY();
