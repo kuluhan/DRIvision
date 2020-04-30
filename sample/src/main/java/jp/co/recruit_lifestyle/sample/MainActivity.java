@@ -2,6 +2,9 @@ package jp.co.recruit_lifestyle.sample;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -11,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.fragment.FloatingViewControlFragment;
+import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
 import android.Manifest;
 import android.app.Fragment;
@@ -26,6 +30,7 @@ import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.IBinder;
 import android.os.Trace;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -53,11 +58,12 @@ import org.tensorflow.lite.examples.detection.env.Logger;
 public abstract class MainActivity extends AppCompatActivity implements OnImageAvailableListener,
         Camera.PreviewCallback,
         CompoundButton.OnCheckedChangeListener,
-        View.OnClickListener {
+        View.OnClickListener{
 
     private static final Logger LOGGER = new Logger();
 
     private static final int PERMISSIONS_REQUEST = 1;
+    private static final int CODE_DRAW_OVER_OTHER_APP_PERMISSION = 2084;
 
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
     protected int previewWidth = 0;
@@ -83,10 +89,15 @@ public abstract class MainActivity extends AppCompatActivity implements OnImageA
     private SwitchCompat apiSwitchCompat;
     private TextView threadsTextView;
 
+
+    FloatingViewControlFragment fragment;
+
+
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_camera);
 
         runOnUiThread(new Runnable() {
@@ -105,12 +116,13 @@ public abstract class MainActivity extends AppCompatActivity implements OnImageA
 
                 if (savedInstanceState == null) {
                     final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-                    ft.add(R.id.container, FloatingViewControlFragment.newInstance());
+                    fragment = FloatingViewControlFragment.newInstance();
+                    ft.add(R.id.container, fragment);
                     ft.commit();
                 }
+
             }
         });
-
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -529,6 +541,7 @@ public abstract class MainActivity extends AppCompatActivity implements OnImageA
 
          */
     }
+
 
     protected void showFrameInfo(String frameInfo) {
         frameValueTextView.setText(frameInfo);

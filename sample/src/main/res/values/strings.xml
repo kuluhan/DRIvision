@@ -1,6 +1,6 @@
 <!-- Thanks @domenukk -->
 <resources>
-    <string name="app_name">FloatingView Sample</string>
+    <string name="app_name">DRIvision</string>
     <string name="chathead_content_title">Demo Chat: Active</string>
     <string name="content_text">Demo running.</string>
     <string name="mail_content_title">Demo Customize: active</string>

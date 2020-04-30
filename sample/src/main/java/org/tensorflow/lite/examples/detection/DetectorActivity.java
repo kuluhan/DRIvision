@@ -57,8 +57,8 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 
-import jp.co.recruit_lifestyle.sample.service.ChatHeadService;
-import jp.co.recruit_lifestyle.sample.service.ChatHeadService.LocalBinder;
+import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
+import jp.co.recruit_lifestyle.sample.service.FloatingViewService.LocalBinder;
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -103,7 +103,7 @@ public class DetectorActivity extends MainActivity implements OnImageAvailableLi
   private BorderedText borderedText;
 
   boolean mBounded;
-  ChatHeadService mServer;
+  FloatingViewService mServer;
   HashSet<String> speedLabels;
   String previousLabel;
 
@@ -121,7 +121,7 @@ public class DetectorActivity extends MainActivity implements OnImageAvailableLi
     speedLabels.add("speed_limit_80");
     speedLabels.add("speed_limit_100");
     speedLabels.add("speed_limit_120");
-    Intent mIntent = new Intent(this, ChatHeadService.class);
+    Intent mIntent = new Intent(this, FloatingViewService.class);
     bindService(mIntent, mConnection, BIND_AUTO_CREATE);
   };
 

@@ -8,7 +8,7 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/drivision"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
         
@@ -31,6 +31,9 @@
             android:exported="false" />
         <service
             android:name="jp.co.recruit_lifestyle.sample.service.CustomFloatingViewService"
+            android:exported="false" />
+        <service
+            android:name="jp.co.recruit_lifestyle.sample.service.FloatingViewService"
             android:exported="false" />
 
     </application>
