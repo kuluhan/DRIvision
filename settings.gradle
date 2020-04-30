@@ -1,1 +1,2 @@
 include ':sample', ':library',':tensorflow-lite'
+rootProject.name="DRIvision"
