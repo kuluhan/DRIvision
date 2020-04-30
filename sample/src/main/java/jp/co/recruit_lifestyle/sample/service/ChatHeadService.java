@@ -5,6 +5,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
+import android.os.Binder;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
 import android.util.DisplayMetrics;
@@ -31,6 +32,8 @@ public class ChatHeadService extends Service implements FloatingViewListener {
     private LayoutInflater inflater;
     private FloatingViewManager.Options options;
     private DisplayMetrics metrics;
+
+    IBinder mBinder = new LocalBinder();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -75,7 +78,13 @@ public class ChatHeadService extends Service implements FloatingViewListener {
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
+    }
+
+    public class LocalBinder extends Binder {
+        public ChatHeadService getServerInstance() {
+            return ChatHeadService.this;
+        }
     }
 
     @Override
@@ -114,40 +123,45 @@ public class ChatHeadService extends Service implements FloatingViewListener {
         return builder.build();
     }
 
-    public void changeSpeedSign(int speedLimit){
+    public void changeSpeedSign(String speedLimit){
+        boolean noUpdate = false;
+        mFloatingViewManager.removeAllViewToWindow();
         switch(speedLimit) {
-            case 1:
+            case "speed_limit_20":
                 iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
                 break;
-            case 2:
+            case "speed_limit_30":
                 iconView = (ImageView) inflater.inflate(R.layout.speed_30, null, false);
                 break;
-            case 3:
+            case "speed_limit_50":
                 iconView = (ImageView) inflater.inflate(R.layout.speed_50, null, false);
                 break;
-            case 4:
+            case "speed_limit_60":
                 iconView = (ImageView) inflater.inflate(R.layout.speed_60, null, false);
                 break;
-            case 5:
+            case "speed_limit_70":
                 iconView = (ImageView) inflater.inflate(R.layout.speed_70, null, false);
                 break;
-            case 6:
+            case "speed_limit_80":
                 iconView = (ImageView) inflater.inflate(R.layout.speed_80, null, false);
                 break;
-            case 7:
+            case "restriction_ends_80":
                 iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
                 break;
-            case 8:
+            case "speed_limit_100":
                 iconView = (ImageView) inflater.inflate(R.layout.speed_100, null, false);
                 break;
-            case 9:
+            case "speed_limit_120":
                 iconView = (ImageView) inflater.inflate(R.layout.speed_120, null, false);
                 break;
             default:
-                iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
+                noUpdate = true;
+                //iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
         }
-        options = new FloatingViewManager.Options();
-        options.overMargin = (int) (16 * metrics.density);
-        mFloatingViewManager.addViewToWindow(iconView, options);
+        if(!noUpdate) {
+            options = new FloatingViewManager.Options();
+            options.overMargin = (int) (16 * metrics.density);
+            mFloatingViewManager.addViewToWindow(iconView, options);
+        }
     }
 }

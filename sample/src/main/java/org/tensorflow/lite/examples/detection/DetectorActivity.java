@@ -36,6 +36,7 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import org.tensorflow.lite.examples.detection.customview.OverlayView;
@@ -49,6 +50,15 @@ import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
 
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
+
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.Bundle;
+import android.os.IBinder;
+
+import jp.co.recruit_lifestyle.sample.service.ChatHeadService;
+import jp.co.recruit_lifestyle.sample.service.ChatHeadService.LocalBinder;
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -91,6 +101,50 @@ public class DetectorActivity extends MainActivity implements OnImageAvailableLi
   private MultiBoxTracker tracker;
 
   private BorderedText borderedText;
+
+  boolean mBounded;
+  ChatHeadService mServer;
+  HashSet<String> speedLabels;
+  String previousLabel;
+
+  @Override
+  public void onStart() {
+    super.onStart();
+
+    previousLabel = "";
+    speedLabels = new HashSet<String>();
+    speedLabels.add("speed_limit_20");
+    speedLabels.add("speed_limit_30");
+    speedLabels.add("speed_limit_50");
+    speedLabels.add("speed_limit_60");
+    speedLabels.add("speed_limit_70");
+    speedLabels.add("speed_limit_80");
+    speedLabels.add("speed_limit_100");
+    speedLabels.add("speed_limit_120");
+    Intent mIntent = new Intent(this, ChatHeadService.class);
+    bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+  };
+
+  ServiceConnection mConnection = new ServiceConnection() {
+    @SuppressLint("WrongConstant")
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+      //Toast.makeText(DetectorActivity.this, "Service is disconnected", 1000).show();
+      System.out.println("DISCONNECTED");
+      mBounded = false;
+      mServer = null;
+    }
+
+    @SuppressLint("WrongConstant")
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder service) {
+      //Toast.makeText(DetectorActivity.this, "Service is connected", 1000).show();
+      System.out.println("CONNECTED");
+      mBounded = true;
+      LocalBinder mLocalBinder = (LocalBinder)service;
+      mServer = mLocalBinder.getServerInstance();
+    }
+  };
 
   @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
   @Override
@@ -183,6 +237,14 @@ public class DetectorActivity extends MainActivity implements OnImageAvailableLi
       ImageUtils.saveBitmap(croppedBitmap);
     }
 
+    System.out.println("MBOUNDED: " + mBounded);
+    /*
+    if(!mBounded) {
+      Intent mIntent = new Intent(this, ChatHeadService.class);
+      bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+    }
+
+     */
     runInBackground(
         new Runnable() {
           @Override
@@ -212,12 +274,24 @@ public class DetectorActivity extends MainActivity implements OnImageAvailableLi
             for (final Classifier.Recognition result : results) {
               final RectF location = result.getLocation();
               if (location != null && result.getConfidence() >= minimumConfidence) {
-                canvas.drawRect(location, paint);
+                  canvas.drawRect(location, paint);
 
-                cropToFrameTransform.mapRect(location);
+                  cropToFrameTransform.mapRect(location);
 
-                result.setLocation(location);
-                mappedRecognitions.add(result);
+                  result.setLocation(location);
+                  mappedRecognitions.add(result);
+
+                  // Update Service HERE
+                  //System.out.println("RESULT ID: " + result.getTitle());
+                  if(speedLabels.contains(result.getTitle()) && !result.getTitle().equals(previousLabel)) {
+                    runOnUiThread(new Runnable() {
+                      @Override
+                      public void run() {
+                        mServer.changeSpeedSign(result.getTitle());
+                      }
+                    });
+                    previousLabel = result.getTitle();
+                  }
               }
             }
 
@@ -226,18 +300,21 @@ public class DetectorActivity extends MainActivity implements OnImageAvailableLi
 
             computingDetection = false;
 
+            /*
             runOnUiThread(
                 new Runnable() {
                   @Override
                   public void run() {
-                    /*
+
                     showFrameInfo(previewWidth + "x" + previewHeight);
                     showCropInfo(cropCopyBitmap.getWidth() + "x" + cropCopyBitmap.getHeight());
                     showInference(lastProcessingTimeMs + "ms");
 
-                     */
+
                   }
                 });
+
+             */
           }
         });
   }

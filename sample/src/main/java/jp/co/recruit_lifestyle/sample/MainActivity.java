@@ -89,22 +89,28 @@ public abstract class MainActivity extends AppCompatActivity implements OnImageA
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
-        // create default notification channel
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            final String channelId = getString(R.string.default_floatingview_channel_id);
-            final String channelName = getString(R.string.default_floatingview_channel_name);
-            final NotificationChannel defaultChannel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_MIN);
-            final NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            if (manager != null) {
-                manager.createNotificationChannel(defaultChannel);
-            }
-        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // create default notification channel
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    final String channelId = getString(R.string.default_floatingview_channel_id);
+                    final String channelName = getString(R.string.default_floatingview_channel_name);
+                    final NotificationChannel defaultChannel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_MIN);
+                    final NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                    if (manager != null) {
+                        manager.createNotificationChannel(defaultChannel);
+                    }
+                }
 
-        if (savedInstanceState == null) {
-            final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-            ft.add(R.id.container, FloatingViewControlFragment.newInstance());
-            ft.commit();
-        }
+                if (savedInstanceState == null) {
+                    final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+                    ft.add(R.id.container, FloatingViewControlFragment.newInstance());
+                    ft.commit();
+                }
+            }
+        });
+
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
