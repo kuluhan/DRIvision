@@ -19,7 +19,11 @@ import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
+import android.os.Build;
 import android.os.Trace;
+
+import androidx.annotation.RequiresApi;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -145,6 +149,7 @@ public class TFLiteObjectDetectionAPIModel implements Classifier {
     return d;
   }
 
+  @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
   @Override
   public List<Recognition> recognizeImage(final Bitmap bitmap) {
     // Log this method so that it can be analyzed with systrace.

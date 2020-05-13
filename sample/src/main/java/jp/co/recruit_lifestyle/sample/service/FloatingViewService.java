@@ -1,14 +1,11 @@
 package jp.co.recruit_lifestyle.sample.service;
 
 import android.app.Notification;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
-import android.graphics.Rect;
-import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
@@ -20,17 +17,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
 
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewListener;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewManager;
 import jp.co.recruit_lifestyle.sample.MainActivity;
-import jp.co.recruit_lifestyle.sample.ServiceCallbacks;
-import jp.co.recruit_lifestyle.sample.fragment.FloatingViewControlFragment;
 
 public class FloatingViewService extends Service implements FloatingViewListener {
     private WindowManager mWindowManager;
@@ -45,11 +38,11 @@ public class FloatingViewService extends Service implements FloatingViewListener
     private static final String PREF_KEY_LAST_POSITION_Y = "last_position_y";
 
 
-    private FloatingViewManager mFloatingViewManager;
-    private ImageView trafficSignView;
-    private LayoutInflater inflater;
-    private FloatingViewManager.Options options;
-    private DisplayMetrics metrics;
+    private static FloatingViewManager mFloatingViewManager;
+    private static ImageView trafficSignView;
+    private static LayoutInflater inflater;
+    private static FloatingViewManager.Options options;
+    private static DisplayMetrics metrics;
 
     // Binder given to clients
     IBinder mBinder = new LocalBinder();
@@ -115,6 +108,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
 
 //Set the view while floating view is expanded.
 //Set the play button.
+        /*
         ImageView playButton = (ImageView) mFloatingView.findViewById(R.id.play_btn);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -123,6 +117,8 @@ public class FloatingViewService extends Service implements FloatingViewListener
 
             }
         });
+
+         */
 
 
 //Set the next button.
@@ -390,7 +386,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
         return options;
     }
 
-    public void changeSpeedSign(String speedLimit){
+    public static void changeSpeedSign(String speedLimit){
         boolean noUpdate = false;
         mFloatingViewManager.removeAllViewToWindow();
         switch(speedLimit) {

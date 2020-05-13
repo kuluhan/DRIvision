@@ -53,20 +53,21 @@
             <ImageView
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:src="@drawable/ic_email"
+                android:src="@mipmap/record"
                 tools:ignore="ContentDescription"/>
 
             <!--Previous button-->
             <ImageView
                 android:id="@+id/prev_btn"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginLeft="20dp"
-                android:src="@mipmap/extend"
+                android:src="@mipmap/gather"
                 tools:ignore="ContentDescription"/>
 
             <!--Play button-->
+            <!--
             <ImageView
                 android:id="@+id/play_btn"
                 android:layout_width="50dp"
@@ -75,15 +76,16 @@
                 android:layout_marginLeft="10dp"
                 android:src="@mipmap/back"
                 tools:ignore="ContentDescription"/>
+            -->
 
             <!--Next button-->
             <ImageView
                 android:id="@+id/next_btn"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:layout_gravity="center_vertical"
-                android:layout_marginLeft="10dp"
-                android:src="@mipmap/back"
+                android:layout_marginLeft="20dp"
+                android:src="@mipmap/disperse"
                 tools:ignore="ContentDescription"/>
 
             <RelativeLayout
@@ -102,7 +104,7 @@
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:layout_alignParentBottom="true"
-                    android:src="@drawable/ic_sample"/>
+                    android:src="@mipmap/settings"/>
             </RelativeLayout>
         </LinearLayout>
     </RelativeLayout>
