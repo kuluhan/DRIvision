@@ -18,11 +18,9 @@ import android.view.WindowManager;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewManager;
-import jp.co.recruit_lifestyle.sample.MainActivity;
 import jp.co.recruit_lifestyle.sample.service.ChatHeadService;
 import jp.co.recruit_lifestyle.sample.service.CustomFloatingViewService;
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
@@ -36,6 +34,8 @@ public class FloatingViewControlFragment extends Fragment {
     private static final int CUSTOM_OVERLAY_PERMISSION_REQUEST_CODE = 101;
 
     private static final int MENU_OVERLAY_PERMISSION_REQUEST_CODE = 102;
+
+    public static boolean created = false;
 
     public static FloatingViewControlFragment newInstance() {
         final FloatingViewControlFragment fragment = new FloatingViewControlFragment();
@@ -126,30 +126,31 @@ public class FloatingViewControlFragment extends Fragment {
     }
 
     private static void startFloatingViewService(Activity activity, int floatingViewNo) {
-        // *** You must follow these rules when obtain the cutout(FloatingViewManager.findCutoutSafeArea) ***
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            // 1. 'windowLayoutInDisplayCutoutMode' do not be set to 'never'
-            if (activity.getWindow().getAttributes().layoutInDisplayCutoutMode == WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER) {
-                throw new RuntimeException("'windowLayoutInDisplayCutoutMode' do not be set to 'never'");
+        if (!created) {
+            // *** You must follow these rules when obtain the cutout(FloatingViewManager.findCutoutSafeArea) ***
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                // 1. 'windowLayoutInDisplayCutoutMode' do not be set to 'never'
+                if (activity.getWindow().getAttributes().layoutInDisplayCutoutMode == WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER) {
+                    throw new RuntimeException("'windowLayoutInDisplayCutoutMode' do not be set to 'never'");
+                }
             }
-        }
 
-        // launch service
-        Class<? extends Service> service;
-        String key;
-        switch (floatingViewNo){
-            case 0:
-                service = ChatHeadService.class;
-                key = ChatHeadService.EXTRA_CUTOUT_SAFE_AREA;
-                break;
-            case 1:
-                service = CustomFloatingViewService.class;
-                key = CustomFloatingViewService.EXTRA_CUTOUT_SAFE_AREA;
-                break;
-            default:
-                service = FloatingViewService.class;
-                key = FloatingViewService.EXTRA_CUTOUT_SAFE_AREA;
-        }
+            // launch service
+            Class<? extends Service> service;
+            String key;
+            switch (floatingViewNo) {
+                case 0:
+                    service = ChatHeadService.class;
+                    key = ChatHeadService.EXTRA_CUTOUT_SAFE_AREA;
+                    break;
+                case 1:
+                    service = CustomFloatingViewService.class;
+                    key = CustomFloatingViewService.EXTRA_CUTOUT_SAFE_AREA;
+                    break;
+                default:
+                    service = FloatingViewService.class;
+                    key = FloatingViewService.EXTRA_CUTOUT_SAFE_AREA;
+            }
         /*
         if (isCustomFloatingView) {
             service = CustomFloatingViewService.class;
@@ -160,9 +161,10 @@ public class FloatingViewControlFragment extends Fragment {
         }
 
          */
-        final Intent intent = new Intent(activity, service);
-        intent.putExtra(key, FloatingViewManager.findCutoutSafeArea(activity));
-        ContextCompat.startForegroundService(activity, intent);
-
+            final Intent intent = new Intent(activity, service);
+            intent.putExtra(key, FloatingViewManager.findCutoutSafeArea(activity));
+            ContextCompat.startForegroundService(activity, intent);
+            created = true;
+        }
     }
 }

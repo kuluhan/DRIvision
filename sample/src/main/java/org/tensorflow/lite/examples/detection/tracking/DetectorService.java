@@ -2,14 +2,18 @@ package org.tensorflow.lite.examples.detection.tracking;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.media.Image;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.Trace;
 import android.util.Size;
+import android.view.Surface;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
@@ -30,6 +34,8 @@ import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.changeSpeedSign;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
+import static org.tensorflow.lite.examples.detection.tracking.DetectorService.DetectorMode.TF_OD_API;
 
 
 public class DetectorService extends Service {
@@ -41,7 +47,7 @@ public class DetectorService extends Service {
     private static final boolean TF_OD_API_IS_QUANTIZED = false;
     private static final String TF_OD_API_MODEL_FILE = "retrained_graph.tflite";
     private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/labelmap.txt";
-    private static final DetectorMode MODE = DetectorMode.TF_OD_API;
+    private static final DetectorMode MODE = TF_OD_API;
     // Minimum detection confidence to track a detection.
     private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.5f;
     private static final boolean MAINTAIN_ASPECT = false;
@@ -49,18 +55,18 @@ public class DetectorService extends Service {
     private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
     private static final boolean SAVE_PREVIEW_BITMAP = false;
     private static final float TEXT_SIZE_DIP = 10;
-    private static Runnable postInferenceCallback;
+    public static Runnable postInferenceCallback;
     OverlayView trackingOverlay;
     private Integer sensorOrientation;
-    protected static int previewWidth = 0;
-    protected static int previewHeight = 0;
-    private Bitmap rgbFrameBitmap = null;
+    public static int previewWidth = 0;
+    public static int previewHeight = 0;
+    private static Bitmap rgbFrameBitmap = null;
     private static Bitmap croppedBitmap = null;
-    private static boolean isProcessingFrame = false;
-    private static byte[][] yuvBytes = new byte[3][];
-    private static int[] rgbBytes = null;
-    private static int yRowStride;
-    private static Runnable imageConverter;
+    public static boolean isProcessingFrame = false;
+    public static byte[][] yuvBytes = new byte[3][];
+    public static int[] rgbBytes = null;
+    public static int yRowStride;
+    public static Runnable imageConverter;
 
     private static Classifier detector;
 
@@ -71,6 +77,10 @@ public class DetectorService extends Service {
     static HashSet<String> speedLabels;
     static String previousLabel;
     public static  boolean started = false;
+    public static int flag = 3;
+
+    private static Matrix frameToCropTransform;
+    private Matrix cropToFrameTransform;
 
     public DetectorService() {
     }
@@ -122,8 +132,37 @@ public class DetectorService extends Service {
         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
         croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Bitmap.Config.ARGB_8888);
 
+        sensorOrientation = 90 - getScreenOrientation();
+
+        frameToCropTransform =
+                ImageUtils.getTransformationMatrix(
+                        previewWidth, previewHeight,
+                        cropSize, cropSize,
+                        sensorOrientation, MAINTAIN_ASPECT);
+
+        cropToFrameTransform = new Matrix();
+        frameToCropTransform.invert(cropToFrameTransform);
+
         started = true;
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    protected int getScreenOrientation() {
+
+        WindowManager windowService = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        int currentRatation = windowService.getDefaultDisplay().getRotation();
+
+        if (Surface.ROTATION_0 == currentRatation) {
+            currentRatation = 0;
+        } else if(Surface.ROTATION_180 == currentRatation) {
+            currentRatation = 280;
+        } else if(Surface.ROTATION_90 == currentRatation) {
+            currentRatation = 90;
+        } else if(Surface.ROTATION_270 == currentRatation) {
+            currentRatation = 270;
+        }
+
+        return currentRatation;
     }
 
     @Override
@@ -132,73 +171,8 @@ public class DetectorService extends Service {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
-    public static void detectTrafficSign(Bitmap croppedBitmap){
-        // We need wait until we have some size from onPreviewSizeChosen
-        if (previewWidth == 0 || previewHeight == 0) {
-            return;
-        }
-        if (rgbBytes == null) {
-            rgbBytes = new int[previewWidth * previewHeight];
-        }
-        try {
-            /*
-            final Image image = ImageIO.read(new File(imagePath));
-
-            if (image == null) {
-                return;
-            }
-
-            if (isProcessingFrame) {
-                image.close();
-                return;
-            }
-            isProcessingFrame = true;
-            Trace.beginSection("imageAvailable");
-            final Plane[] planes = image.getPlanes();
-            fillBytes(planes, yuvBytes);
-            yRowStride = planes[0].getRowStride();
-            final int uvRowStride = planes[1].getRowStride();
-            final int uvPixelStride = planes[1].getPixelStride();
-
-            imageConverter =
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            ImageUtils.convertYUV420ToARGB8888(
-                                    yuvBytes[0],
-                                    yuvBytes[1],
-                                    yuvBytes[2],
-                                    previewWidth,
-                                    previewHeight,
-                                    yRowStride,
-                                    uvRowStride,
-                                    uvPixelStride,
-                                    rgbBytes);
-                        }
-                    };
-
-             */
-
-            postInferenceCallback =
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            //image.close();
-                            isProcessingFrame = false;
-                        }
-                    };
-
-            processImage(croppedBitmap);
-        } catch (final Exception e) {
-            LOGGER.e(e, "Exception!");
-            Trace.endSection();
-            return;
-        }
-        Trace.endSection();
-    }
-
-    public static void processImage(Bitmap croppedBitmap) {
+    public static void processImage() {
+        //System.out.println("PROCESS IMAGE");
 
         // No mutex needed as this method is not reentrant.
         if (computingDetection) {
@@ -206,13 +180,36 @@ public class DetectorService extends Service {
             return;
         }
         computingDetection = true;
+        rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
 
         readyForNextImage();
 
+        final Canvas canvas = new Canvas(croppedBitmap);
+        canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
         // For examining the actual TF input.
         if (SAVE_PREVIEW_BITMAP) {
             ImageUtils.saveBitmap(croppedBitmap);
         }
+
+        /*
+        if(flag > 0){
+            System.out.println("IMAGE " + flag);
+            int[]iImageArray = new int[croppedBitmap.getWidth()* croppedBitmap.getHeight()];                                   //initializing the array for the image size
+            croppedBitmap.getPixels(iImageArray, 0, croppedBitmap.getWidth(), 0, 0, croppedBitmap.getWidth(), croppedBitmap.getHeight());
+            for (int i=0; i < croppedBitmap.getHeight(); i++)
+            {
+                for(int j=0; j<croppedBitmap.getWidth(); j++)
+                {
+                    System.out.print(iImageArray[(i*croppedBitmap.getWidth()+j)]+ " ");
+                }
+                System.out.println();
+            }
+            flag--;
+        }
+
+         */
+
+
 
         //System.out.println("MBOUNDED: " + mBounded);
     /*
@@ -222,6 +219,8 @@ public class DetectorService extends Service {
     }
 
      */
+
+
         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
 
         float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
@@ -236,8 +235,8 @@ public class DetectorService extends Service {
             if (location != null && result.getConfidence() >= minimumConfidence) {
 
                 // Update Service HERE
-                //System.out.println("RESULT ID: " + result.getTitle());
-                if(speedLabels.contains(result.getTitle()) && !result.getTitle().equals(previousLabel)) {
+                System.out.println("RESULT ID: " + result.getTitle());
+                if (speedLabels.contains(result.getTitle()) && !result.getTitle().equals(previousLabel) && show) {
                     //mServer.changeSpeedSign(result.getTitle());
                     changeSpeedSign(result.getTitle());
                     previousLabel = result.getTitle();
@@ -246,9 +245,11 @@ public class DetectorService extends Service {
         }
 
         computingDetection = false;
+
+
     }
 
-    private enum DetectorMode {
+    public enum DetectorMode {
         TF_OD_API;
     }
 
@@ -271,4 +272,18 @@ public class DetectorService extends Service {
             buffer.get(yuvBytes[i]);
         }
     }
+
+    protected static int[] getRgbBytes() {
+        imageConverter.run();
+        return rgbBytes;
+    }
+
+    protected int getLuminanceStride() {
+        return yRowStride;
+    }
+
+    protected byte[] getLuminance() {
+        return yuvBytes[0];
+    }
+
 }

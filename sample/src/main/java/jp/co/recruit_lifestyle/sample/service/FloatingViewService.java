@@ -27,7 +27,7 @@ import jp.co.recruit_lifestyle.sample.MainActivity;
 
 public class FloatingViewService extends Service implements FloatingViewListener {
     private WindowManager mWindowManager;
-    private View mFloatingView;
+    public static View mFloatingView;
     boolean created = false;
     public static final String EXTRA_CUTOUT_SAFE_AREA = "cutout_safe_area";
 
@@ -43,6 +43,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
     private static LayoutInflater inflater;
     private static FloatingViewManager.Options options;
     private static DisplayMetrics metrics;
+    public static boolean show;
 
     // Binder given to clients
     IBinder mBinder = new LocalBinder();
@@ -86,6 +87,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         mWindowManager.addView(mFloatingView, params);
 
+        show = false;
         createOne();
 
 
@@ -121,6 +123,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
          */
 
 
+        /*
 //Set the next button.
         ImageView nextButton = (ImageView) mFloatingView.findViewById(R.id.next_btn);
         nextButton.setOnClickListener(new View.OnClickListener() {
@@ -142,6 +145,8 @@ public class FloatingViewService extends Service implements FloatingViewListener
                 }
             }
         });
+
+         */
 
 
 //Set the close button
@@ -165,9 +170,6 @@ public class FloatingViewService extends Service implements FloatingViewListener
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
 
-
-                //close the service and remove view from the view hierarchy
-                //stopSelf();
             }
         });
 
@@ -239,7 +241,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
         final WindowManager windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         windowManager.getDefaultDisplay().getMetrics(metrics);
         inflater = LayoutInflater.from(this);
-        trafficSignView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
+        //trafficSignView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
         /*
         final LayoutInflater inflater = LayoutInflater.from(this);
         final ImageView iconView = (ImageView) inflater.inflate(R.layout.widget_mail, null, false);
@@ -262,9 +264,15 @@ public class FloatingViewService extends Service implements FloatingViewListener
         // Setting Options(you can change options at any time)
         loadDynamicOptions();
         // Initial Setting Options (you can't change options after created.)
+        //final FloatingViewManager.Options options = loadOptions(metrics);
+        //mFloatingViewManager.addViewToWindow(trafficSignView, options);
+        created = true;
+    }
+    public void showSpeedLimit(){
+        trafficSignView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
         final FloatingViewManager.Options options = loadOptions(metrics);
         mFloatingViewManager.addViewToWindow(trafficSignView, options);
-        created = true;
+        show = true;
     }
     private boolean isViewCollapsed() {
         return mFloatingView == null || mFloatingView.findViewById(R.id.collapse_view).getVisibility() == View.VISIBLE;
@@ -290,11 +298,12 @@ public class FloatingViewService extends Service implements FloatingViewListener
         }
     }
 
-    private void destroy() {
+    public void destroy() {
         if (mFloatingViewManager != null) {
             mFloatingViewManager.removeAllViewToWindow();
-            mFloatingViewManager = null;
+            //mFloatingViewManager = null;
             created = false;
+            show = false;
         }
     }
 

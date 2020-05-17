@@ -5,6 +5,47 @@
     android:baselineAligned="false"
     android:orientation="vertical"
     tools:context="jp.co.recruit_lifestyle.sample.MainActivity">
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+    <Switch
+        android:id="@+id/switch1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:switchMinWidth="56dp"
+        android:layout_marginLeft="100dp"
+        android:layout_marginTop="120dp"
+        android:text="Speed Limit Detection:"
+        android:checked="true"
+        android:textOff="OFF"
+        android:textOn="ON"/>
+    <Switch
+        android:id="@+id/switch2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:switchMinWidth="56dp"
+        android:layout_below="@+id/switch1"
+        android:layout_alignLeft="@+id/switch1"
+        android:text="Lane Tracking:"
+        android:textOff="OFF"
+        android:textOn ="ON"/>
+    <Switch
+        android:id="@+id/switch3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:switchMinWidth="56dp"
+        android:layout_below="@+id/switch2"
+        android:layout_alignLeft="@+id/switch2"
+        android:text="Collision Warning:"
+        android:textOff="OFF"
+        android:textOn ="ON"/>
+    <Button
+        android:id="@+id/getBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="150dp"
+        android:layout_marginTop="200dp"
+        android:text="Apply" />
+    </RelativeLayout>
+
 
     <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
@@ -84,6 +125,5 @@
         </LinearLayout>
 
     </LinearLayout>
-
 
 </LinearLayout>
