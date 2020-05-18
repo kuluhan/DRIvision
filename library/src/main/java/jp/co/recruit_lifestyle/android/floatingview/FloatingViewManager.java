@@ -395,7 +395,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
     }
 
     /**
-     * View
+     * ViewをWindowから取り外します。
      *
      * @param floatingView FloatingView
      */
@@ -414,7 +414,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
     }
 
     /**
-     * Vie
+     * ViewをWindowから全て取り外します。
      */
     public void removeAllViewToWindow() {
         removeViewImmediate(mFullscreenObserverView);

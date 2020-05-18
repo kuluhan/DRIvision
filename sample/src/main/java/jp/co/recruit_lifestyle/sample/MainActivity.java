@@ -172,6 +172,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
             Intent intent = new Intent(MainActivity.this, CameraService.class);
             MainActivity.this.startService(intent);
+
         } else {
             requestPermission();
         }
@@ -301,7 +302,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         }
     }
-//TODO: SHOW DUZENLEMESİ
+
     private static boolean allPermissionsGranted(final int[] grantResults) {
         for (int result : grantResults) {
             if (result != PackageManager.PERMISSION_GRANTED) {
