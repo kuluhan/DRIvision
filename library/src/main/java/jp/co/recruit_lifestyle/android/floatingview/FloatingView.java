@@ -1113,7 +1113,7 @@ class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawList
     }
 
     private void setScale(float newScale) {
-        // INFO:childにscaleを設定しないと拡大率が変わらない現象に対処するための修正
+        // INFO:
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
             final int childCount = getChildCount();
             for (int i = 0; i < childCount; i++) {
@@ -1146,14 +1146,14 @@ class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawList
     }
 
     /**
-     * @param margin マージン
+     * @param margin
      */
     void setOverMargin(int margin) {
         mOverMargin = margin;
     }
 
     /**
-     * @param moveDirection 移動方向
+     * @param moveDirection
      */
     void setMoveDirection(int moveDirection) {
         mMoveDirection = moveDirection;

@@ -9,6 +9,7 @@ import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.util.Log;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 import jp.co.recruit.floatingview.R;
@@ -45,13 +47,14 @@ import static org.tensorflow.lite.examples.detection.tracking.DetectorService.pr
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewWidth;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.processImage;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.readyForNextImage;
+import static org.tensorflow.lite.examples.detection.tracking.DetectorService.readyForNextImage2;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.rgbBytes;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.yuvBytes;
+import static org.tensorflow.lite.examples.detection.tracking.DetectorService.recentPics;
 
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
 public class CameraService extends Service implements Camera.PreviewCallback {
     String[] ImagePath;
-
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
     //public TextureView mSurfaceView;
@@ -63,9 +66,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     protected SharedPreferences prefs;
     int count = 0;
     public static boolean safeToTakePicture = false;
-
     public static String TAG = "DualCamActivity";
-
     private LinearLayout mllFirst;
     public static CameraPreviews mCameraPreview;
     private SurfaceTexture surfaceTexture;
@@ -79,13 +80,14 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static View tex;
     private HandlerThread backgroundThread;
 
+
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
+
         if (isProcessingFrame) {
             //LOGGER.w("Dropping frame!");
             return;
         }
-
         try {
             // Initialize the storage bitmaps once when the resolution is known.
             if (rgbBytes == null) {
@@ -100,10 +102,22 @@ public class CameraService extends Service implements Camera.PreviewCallback {
             return;
         }
 
+        recentPics.add(data);
         isProcessingFrame = true;
         yuvBytes[0] = data;
-        DetectorService.yRowStride = previewWidth;
-
+        DetectorService.imageSaver= new Runnable() {
+            @Override
+            public void run() {
+                camera.addCallbackBuffer(data);
+                recentPics.add(data);
+                while (recentPics.size()>300)
+                     recentPics.remove();
+                System.out.println("AddingNEWDATA"+recentPics.size());
+                readyForNextImage2();
+            }
+        };
+        readyForNextImage2();
+    /*
         DetectorService.imageConverter =
                 new Runnable() {
                     @Override
@@ -126,8 +140,10 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         if(show)
             processImage();
         else
-            readyForNextImage();
+            readyForNextImage();*/
+
     }
+
 
     private final TextureView.SurfaceTextureListener surfaceTextureListener =
             new TextureView.SurfaceTextureListener() {
@@ -321,13 +337,21 @@ public class CameraService extends Service implements Camera.PreviewCallback {
 
     @Override
     public void onCreate() {
+        recentPics= new LinkedList<byte[]>();
         System.out.println("niyeeee");
         this.mllFirst = MainActivity.mllFirst;
         System.out.println("mllFirst: " + mllFirst);
         //this.frontCamera = getCameraInstance(1);
-        mServiceCamera = getCameraInstance(0);
-        System.out.println("CAMERA " + mServiceCamera.toString());
-
+        try {
+            mServiceCamera = getCameraInstance(0);
+            System.out.println("CAMERA " + mServiceCamera.toString());
+            previewWidth = mServiceCamera.getParameters().getPreviewSize().width;
+            previewHeight = mServiceCamera.getParameters().getPreviewSize().height;
+            System.out.println("WIDTH: " + previewWidth + " HEIGHT: " + previewHeight);
+        }
+        catch (Exception e){
+            System.out.println("Camera init failed:"+e);
+        }
         /*
         try {
             mSurfaceView = new CameraPreviews(this, mServiceCamera);
@@ -337,8 +361,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         System.out.println("SURFACE PREVIEW: " + mSurfaceView);
 
          */
-
-
         //this.frontCameraPreview = new FrontCameraPreviews(this, this.frontCamera);
         System.out.println("CHECKPOINT");
         //MainActivity.mllFirst.addView(mSurfaceView);
@@ -354,9 +376,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         //this.mPicture = new takePicture(0);
         //this.mPictureBack = new takePicture(1);
 
-        previewWidth = mServiceCamera.getParameters().getPreviewSize().width;
-        previewHeight = mServiceCamera.getParameters().getPreviewSize().height;
-        System.out.println("WIDTH: " + previewWidth + " HEIGHT: " + previewHeight);
         tex = LayoutInflater.from(this).inflate(R.layout.texture, null);
         textureView =  tex.findViewById(R.id.texture);
         textureView.setSurfaceTextureListener(surfaceTextureListener);

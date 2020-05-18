@@ -153,6 +153,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     //str1 = feature1.getTextOn().toString();
                     if(!mServer.show) {
                         mServer.showSpeedLimit();
+                        Intent intent2 = new Intent(MainActivity.this, DetectorService.class);
+                        MainActivity.this.startService(intent2);
                     }
                 }
                 else {
@@ -170,9 +172,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
             Intent intent = new Intent(MainActivity.this, CameraService.class);
             MainActivity.this.startService(intent);
-            Intent intent2 = new Intent(MainActivity.this, DetectorService.class);
-            MainActivity.this.startService(intent2);
-
         } else {
             requestPermission();
         }
@@ -302,7 +301,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         }
     }
-
+//TODO: SHOW DUZENLEMESİ
     private static boolean allPermissionsGranted(final int[] grantResults) {
         for (int result : grantResults) {
             if (result != PackageManager.PERMISSION_GRANTED) {

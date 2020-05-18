@@ -10,7 +10,10 @@ import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.media.Image;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -27,6 +30,7 @@ import org.tensorflow.lite.examples.detection.tflite.TFLiteObjectDetectionAPIMod
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
@@ -48,6 +52,7 @@ public class DetectorService extends Service {
     private static final String TF_OD_API_MODEL_FILE = "retrained_graph.tflite";
     private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/labelmap.txt";
     private static final DetectorMode MODE = TF_OD_API;
+    private byte[] data;
     // Minimum detection confidence to track a detection.
     private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.5f;
     private static final boolean MAINTAIN_ASPECT = false;
@@ -56,6 +61,7 @@ public class DetectorService extends Service {
     private static final boolean SAVE_PREVIEW_BITMAP = false;
     private static final float TEXT_SIZE_DIP = 10;
     public static Runnable postInferenceCallback;
+    public static Runnable imageSaver;
     OverlayView trackingOverlay;
     private Integer sensorOrientation;
     public static int previewWidth = 0;
@@ -67,7 +73,7 @@ public class DetectorService extends Service {
     public static int[] rgbBytes = null;
     public static int yRowStride;
     public static Runnable imageConverter;
-
+    public static LinkedList<byte[]> recentPics;
     private static Classifier detector;
 
     private static boolean computingDetection = false;
@@ -88,6 +94,7 @@ public class DetectorService extends Service {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        System.out.println("Detector service Started.");
         previousLabel = "";
         speedLabels = new HashSet<String>();
         speedLabels.add("speed_limit_20");
@@ -144,7 +151,9 @@ public class DetectorService extends Service {
         frameToCropTransform.invert(cropToFrameTransform);
 
         started = true;
-        return super.onStartCommand(intent, flags, startId);
+        super.onStartCommand(intent, flags, startId);
+        sign_detect();
+        return Service.START_NOT_STICKY;
     }
 
     protected int getScreenOrientation() {
@@ -165,6 +174,36 @@ public class DetectorService extends Service {
         return currentRatation;
     }
 
+    private void sign_detect(){
+        System.out.println("Sign Detect Entered");
+        imageConverter =
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        yuvBytes[0] = data;
+                        DetectorService.yRowStride = previewWidth;
+                        ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
+                    }
+                };
+        postInferenceCallback =
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        if(recentPics.size()>0){
+                            System.out.println("recentpic is not empty");
+                            data = recentPics.getLast();
+                            isProcessingFrame = true;
+                            processImage();
+                        }else {
+                            System.out.println("DetectorService:0 recent pics");
+                            readyForNextImage();
+                        }
+                        isProcessingFrame = false;
+                    }
+                };
+        readyForNextImage();
+       // processImage();
+    }
     @Override
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
@@ -172,8 +211,8 @@ public class DetectorService extends Service {
     }
 
     public static void processImage() {
+        System.out.println("new image processing");
         //System.out.println("PROCESS IMAGE");
-
         // No mutex needed as this method is not reentrant.
         if (computingDetection) {
             readyForNextImage();
@@ -182,45 +221,12 @@ public class DetectorService extends Service {
         computingDetection = true;
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
 
-        readyForNextImage();
-
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
         // For examining the actual TF input.
         if (SAVE_PREVIEW_BITMAP) {
             ImageUtils.saveBitmap(croppedBitmap);
         }
-
-        /*
-        if(flag > 0){
-            System.out.println("IMAGE " + flag);
-            int[]iImageArray = new int[croppedBitmap.getWidth()* croppedBitmap.getHeight()];                                   //initializing the array for the image size
-            croppedBitmap.getPixels(iImageArray, 0, croppedBitmap.getWidth(), 0, 0, croppedBitmap.getWidth(), croppedBitmap.getHeight());
-            for (int i=0; i < croppedBitmap.getHeight(); i++)
-            {
-                for(int j=0; j<croppedBitmap.getWidth(); j++)
-                {
-                    System.out.print(iImageArray[(i*croppedBitmap.getWidth()+j)]+ " ");
-                }
-                System.out.println();
-            }
-            flag--;
-        }
-
-         */
-
-
-
-        //System.out.println("MBOUNDED: " + mBounded);
-    /*
-    if(!mBounded) {
-      Intent mIntent = new Intent(this, ChatHeadService.class);
-      bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-    }
-
-     */
-
-
         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
 
         float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
@@ -243,10 +249,8 @@ public class DetectorService extends Service {
                 }
             }
         }
-
         computingDetection = false;
-
-
+        readyForNextImage();
     }
 
     public enum DetectorMode {
@@ -254,9 +258,18 @@ public class DetectorService extends Service {
     }
 
     public static void readyForNextImage() {
+        System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
-            postInferenceCallback.run();
+            System.out.println("Ready for new image");
+            //postInferenceCallback.run();
+            (new Handler()).postDelayed(postInferenceCallback ,1000);
         }
+    }
+    public static void readyForNextImage2() {
+        if (imageSaver != null) {
+            (new Handler()).postDelayed(imageSaver ,1000);
+        }
+
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
