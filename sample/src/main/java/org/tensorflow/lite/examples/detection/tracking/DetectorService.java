@@ -11,7 +11,9 @@ import android.graphics.RectF;
 import android.media.Image;
 import android.os.Build;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -35,7 +37,6 @@ import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
 import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
-import static jp.co.recruit_lifestyle.sample.MainActivity.runInBackground;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.changeSpeedSign;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.DetectorMode.TF_OD_API;
@@ -86,14 +87,14 @@ public class DetectorService extends Service {
 
     private static Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
-    volatile boolean shutdown = false;
-    volatile boolean shutdown2 = false;
+
     public DetectorService() {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        System.out.println("Detector service Started.");
         previousLabel = "";
         speedLabels = new HashSet<String>();
         speedLabels.add("speed_limit_20");
@@ -149,7 +150,8 @@ public class DetectorService extends Service {
         cropToFrameTransform = new Matrix();
         frameToCropTransform.invert(cropToFrameTransform);
 
-        started = true;        super.onStartCommand(intent, flags, startId);
+        started = true;
+        super.onStartCommand(intent, flags, startId);
         sign_detect();
         return Service.START_NOT_STICKY;
     }
@@ -171,42 +173,36 @@ public class DetectorService extends Service {
 
         return currentRatation;
     }
+
     private void sign_detect(){
         System.out.println("Sign Detect Entered");
         imageConverter =
                 new Runnable() {
-                    private Boolean stop = false;
                     @Override
                     public void run() {
-
-                            yuvBytes[0] = data;
-                            DetectorService.yRowStride = previewWidth;
-                            ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
-                        }
-
-
+                        yuvBytes[0] = data;
+                        DetectorService.yRowStride = previewWidth;
+                        ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
+                    }
                 };
         postInferenceCallback =
                 new Runnable() {
                     @Override
                     public void run() {
-
-                            if(recentPics.size()>0){
-                                System.out.println("recentpic is not empty");
-                                data = recentPics.get(recentPics.size()-1);
-                                isProcessingFrame = true;
-                                processImage();
-                            }else {
-                                System.out.println("DetectorService:0 recent pics");
-                                readyForNextImage();
-                            }
-                            isProcessingFrame = false;
+                        if(recentPics.size()>0){
+                            System.out.println("recentpic is not empty");
+                            data = recentPics.getLast();
+                            isProcessingFrame = true;
+                            processImage();
+                        }else {
+                            System.out.println("DetectorService:0 recent pics");
+                            readyForNextImage();
                         }
-
-
+                        isProcessingFrame = false;
+                    }
                 };
         readyForNextImage();
-        // processImage();
+       // processImage();
     }
     @Override
     public IBinder onBind(Intent intent) {
@@ -215,8 +211,8 @@ public class DetectorService extends Service {
     }
 
     public static void processImage() {
+        System.out.println("new image processing");
         //System.out.println("PROCESS IMAGE");
-
         // No mutex needed as this method is not reentrant.
         if (computingDetection) {
             readyForNextImage();
@@ -225,15 +221,12 @@ public class DetectorService extends Service {
         computingDetection = true;
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
 
-        //readyForNextImage();
-
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
         // For examining the actual TF input.
         if (SAVE_PREVIEW_BITMAP) {
             ImageUtils.saveBitmap(croppedBitmap);
         }
-
         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
 
         float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
@@ -254,28 +247,24 @@ public class DetectorService extends Service {
                     changeSpeedSign(result.getTitle());
                     previousLabel = result.getTitle();
                 }
-
+            }
+        }
         computingDetection = false;
         readyForNextImage();
-
-
     }
 
-   };
-
-    }
     public enum DetectorMode {
         TF_OD_API;
     }
 
     public static void readyForNextImage() {
+        System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
             System.out.println("Ready for new image");
             //postInferenceCallback.run();
             (new Handler()).postDelayed(postInferenceCallback ,1000);
         }
     }
-
     public static void readyForNextImage2() {
         if (imageSaver != null) {
             (new Handler()).postDelayed(imageSaver ,1000);
@@ -302,7 +291,6 @@ public class DetectorService extends Service {
         return rgbBytes;
     }
 
-
     protected int getLuminanceStride() {
         return yRowStride;
     }
@@ -310,13 +298,5 @@ public class DetectorService extends Service {
     protected byte[] getLuminance() {
         return yuvBytes[0];
     }
-   /* @Override
-    public void onDestroy() {
-        shutdown = true;
-        shutdown2 = true;
-        super.onDestroy();
-    }*/
-
-
 
 }
