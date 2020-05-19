@@ -61,7 +61,6 @@ public class DetectorService extends Service {
     private static final float TEXT_SIZE_DIP = 10;
     public static Runnable postInferenceCallback;
     public static Runnable imageSaver;
-    public static Runnable runInBackground;
     OverlayView trackingOverlay;
     private Integer sensorOrientation;
     public static int previewWidth = 0;
@@ -87,7 +86,8 @@ public class DetectorService extends Service {
 
     private static Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
-
+    volatile boolean shutdown = false;
+    volatile boolean shutdown2 = false;
     public DetectorService() {
     }
 
@@ -175,28 +175,35 @@ public class DetectorService extends Service {
         System.out.println("Sign Detect Entered");
         imageConverter =
                 new Runnable() {
+                    private Boolean stop = false;
                     @Override
                     public void run() {
-                        yuvBytes[0] = data;
-                        DetectorService.yRowStride = previewWidth;
-                        ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
-                    }
+
+                            yuvBytes[0] = data;
+                            DetectorService.yRowStride = previewWidth;
+                            ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
+                        }
+
+
                 };
         postInferenceCallback =
                 new Runnable() {
                     @Override
                     public void run() {
-                        if(recentPics.size()>0){
-                            System.out.println("recentpic is not empty");
-                            data = recentPics.getLast();
-                            isProcessingFrame = true;
-                            processImage();
-                        }else {
-                            System.out.println("DetectorService:0 recent pics");
-                            readyForNextImage();
+
+                            if(recentPics.size()>0){
+                                System.out.println("recentpic is not empty");
+                                data = recentPics.get(recentPics.size()-1);
+                                isProcessingFrame = true;
+                                processImage();
+                            }else {
+                                System.out.println("DetectorService:0 recent pics");
+                                readyForNextImage();
+                            }
+                            isProcessingFrame = false;
                         }
-                        isProcessingFrame = false;
-                    }
+
+
                 };
         readyForNextImage();
         // processImage();
@@ -264,7 +271,8 @@ public class DetectorService extends Service {
     public static void readyForNextImage() {
         if (postInferenceCallback != null) {
             System.out.println("Ready for new image");
-            postInferenceCallback.run();
+            //postInferenceCallback.run();
+            (new Handler()).postDelayed(postInferenceCallback ,1000);
         }
     }
 
@@ -294,6 +302,7 @@ public class DetectorService extends Service {
         return rgbBytes;
     }
 
+
     protected int getLuminanceStride() {
         return yRowStride;
     }
@@ -301,6 +310,12 @@ public class DetectorService extends Service {
     protected byte[] getLuminance() {
         return yuvBytes[0];
     }
+   /* @Override
+    public void onDestroy() {
+        shutdown = true;
+        shutdown2 = true;
+        super.onDestroy();
+    }*/
 
 
 

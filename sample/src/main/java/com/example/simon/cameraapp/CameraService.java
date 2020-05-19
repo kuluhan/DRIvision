@@ -69,7 +69,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static boolean safeToTakePicture = false;
 
     public static String TAG = "DualCamActivity";
-
+    boolean noFrontCamera = false;
     //private LinearLayout mllFirst;
     public static CameraPreviews mCameraPreview;
     private SurfaceTexture surfaceTexture;
@@ -109,7 +109,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         recentPics.add(data);
         isProcessingFrame = true;
         yuvBytes[0] = data;
-        imageSaver= new Runnable() {
+        DetectorService.imageSaver= new Runnable() {
             @Override
             public void run() {
                 camera.addCallbackBuffer(data);
@@ -117,11 +117,11 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                 while (recentPics.size()>300)
                     recentPics.remove();
                 System.out.println("AddingNEWDATA"+recentPics.size());
-                readyForNextImage();
+                readyForNextImage2();
             }
         };
 
-        readyForNextImage();
+        readyForNextImage2();
     }
 
     private final TextureView.SurfaceTextureListener surfaceTextureListener =
@@ -291,19 +291,35 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         System.out.println("niyeeee");
         System.out.println(Camera.getNumberOfCameras());
         recentPics= new LinkedList<byte[]>();
-        mServiceCamera = getCameraInstance(0);
-        mBackServiceCamera = getCameraInstance(1);
-        System.out.println("CAMERA " + mBackServiceCamera.toString());
 
-        previewWidth = mServiceCamera.getParameters().getPreviewSize().width;
-        previewHeight = mServiceCamera.getParameters().getPreviewSize().height;
-        System.out.println("WIDTH: " + previewWidth + " HEIGHT: " + previewHeight);
+        try {
+            mServiceCamera = getCameraInstance(0);
+            System.out.println("CAMERA " + mServiceCamera.toString());
+            previewWidth = mServiceCamera.getParameters().getPreviewSize().width;
+            previewHeight = mServiceCamera.getParameters().getPreviewSize().height;
+            System.out.println("WIDTH: " + previewWidth + " HEIGHT: " + previewHeight);
+
+        }
+        catch (Exception e){
+            System.out.println("Camera init failed:"+e);
+        }
+        if(getCameraInstance(1) == null)
+        {
+            noFrontCamera = true;
+        }
+        else{
+            mBackServiceCamera = getCameraInstance(1);
+        }
+
         tex = LayoutInflater.from(this).inflate(R.layout.texture, null);
         tex2 = LayoutInflater.from(this).inflate(R.layout.texture2, null);
         textureView =  tex.findViewById(R.id.texture);
         textureView.setSurfaceTextureListener(surfaceTextureListener);
-        textureView2 =  tex2.findViewById(R.id.texture2);
-        textureView2.setSurfaceTextureListener(backSurfaceTextureListener);
+        if(noFrontCamera == false)
+        {
+            textureView2 =  tex2.findViewById(R.id.texture2);
+            textureView2.setSurfaceTextureListener(backSurfaceTextureListener);
+        }
 
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -312,7 +328,11 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT);
-        mWindowManager.addView(tex2, params);
+        if(noFrontCamera == false)
+        {
+            mWindowManager.addView(tex2, params);
+        }
+
         //textureView2.setVisibility(View.GONE);
         mWindowManager.addView(tex, params);
 
@@ -333,7 +353,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         super.onStartCommand(intent, flags, startId);
         startBackgroundThread();
 //        startTakingPicture();
-        if (textureView.isAvailable()) {
+     /*  if (textureView.isAvailable()) {
             mServiceCamera.startPreview();
         } else {
             textureView.setSurfaceTextureListener(surfaceTextureListener);
@@ -344,7 +364,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         } else {
             textureView2.setSurfaceTextureListener(backSurfaceTextureListener);
         }
-
+*/
 
         return START_STICKY;
     }
@@ -368,12 +388,19 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public void onDestroy() {
         stopCameraPreview(mServiceCamera,0);
         stopCamera(0);
-        stopCameraPreview(mServiceCamera,1);
-        stopCamera(1);
+        if(noFrontCamera == false)
+        {
+            stopCameraPreview(mServiceCamera,1);
+            stopCamera(1);
+        }
         stopBackgroundThread();
         //stopCameraPreview(mBackServiceCamera,1);
         mWindowManager.removeView(tex);
-        mWindowManager2.removeView(tex2);
+        if(noFrontCamera == false)
+        {
+            mWindowManager.removeView(tex2);
+        }
+
         super.onDestroy();
     }
 
