@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -38,25 +39,37 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
 
-import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
+import static org.tensorflow.lite.examples.detection.tracking.DetectorService.imageConverter;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.isProcessingFrame;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewHeight;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewWidth;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.processImage;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.readyForNextImage;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.readyForNextImage2;
+
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.rgbBytes;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.yuvBytes;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.recentPics;
 
+class MonitorObject{
+}
+
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
 public class CameraService extends Service implements Camera.PreviewCallback {
+    public static ReentrantReadWriteLock lck =new ReentrantReadWriteLock();
+    public static Lock writeLock =lck.writeLock();
+    public static Lock readLock = lck.readLock();
     String[] ImagePath;
+    List picList;
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
+    private static Bitmap rgbFrameBitmap = null;
     //public TextureView mSurfaceView;
     public static Camera mServiceCamera;
     private SurfaceView mBackSurfaceView;
@@ -79,8 +92,10 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     private WindowManager mWindowManager;
     public static View tex;
     private HandlerThread backgroundThread;
-
-
+    public static Runnable imageSaver;
+    public static final Object lockk = new Object();
+    public static final int SIZEOFRECENTPICS=30;
+   // public static  final MonitorObject myMonitorObject =new MonitorObject();
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
 
@@ -101,21 +116,39 @@ public class CameraService extends Service implements Camera.PreviewCallback {
             //LOGGER.e(e, "Exception!");
             return;
         }
-
-        recentPics.add(data);
+       //  myMonitorObject = new MonitorObject();
+        //recentPics.add(data);
         isProcessingFrame = true;
-        yuvBytes[0] = data;
-        DetectorService.imageSaver= new Runnable() {
+        //yuvBytes[0] = data;
+        imageSaver= new Runnable() {
             @Override
             public void run() {
-                camera.addCallbackBuffer(data);
-                recentPics.add(data);
-                while (recentPics.size()>300)
-                     recentPics.remove();
-                System.out.println("AddingNEWDATA"+recentPics.size());
-                readyForNextImage2();
+                writeLock.lock();
+                try {
+                    // access the resource protected by this lock
+                    camera.addCallbackBuffer(data);
+                    imageConverter.run();
+                    recentPics.add(rgbFrameBitmap);
+                    while (recentPics.size()>SIZEOFRECENTPICS)
+                          recentPics.remove(0);
+                    System.out.println("AddingNEWDATA"+recentPics.size());
+                    readyForNextImage2();
+                } finally {
+                    writeLock.unlock();
+                }
             }
         };
+                imageConverter =
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        yuvBytes[0] = data;
+                        DetectorService.yRowStride = previewWidth;
+                        ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
+                        rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
+                        rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
+                    }
+                };
         readyForNextImage2();
     /*
         DetectorService.imageConverter =
@@ -143,7 +176,14 @@ public class CameraService extends Service implements Camera.PreviewCallback {
             readyForNextImage();*/
 
     }
-
+    public static void readyForNextImage2() {
+        if (imageSaver != null) {
+            synchronized (lockk) {
+                lockk.notify(); // Will wake up lock.wait()
+            }
+            (new Handler()).postDelayed(imageSaver ,1000);
+        }
+    }
 
     private final TextureView.SurfaceTextureListener surfaceTextureListener =
             new TextureView.SurfaceTextureListener() {
@@ -337,7 +377,8 @@ public class CameraService extends Service implements Camera.PreviewCallback {
 
     @Override
     public void onCreate() {
-        recentPics= new LinkedList<byte[]>();
+        recentPics=  new CopyOnWriteArrayList<Bitmap>();
+        picList =Collections.synchronizedList (recentPics);
         System.out.println("niyeeee");
         this.mllFirst = MainActivity.mllFirst;
         System.out.println("mllFirst: " + mllFirst);

@@ -51,22 +51,22 @@
 
             <!--Album image for the song currently playing.-->
             <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
+                android:id="@+id/record"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:src="@mipmap/record"
                 tools:ignore="ContentDescription"/>
 
             <!--Previous button-->
-            <!--
+
             <ImageView
-                android:id="@+id/prev_btn"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginLeft="20dp"
-                android:src="@mipmap/gather"
-                tools:ignore="ContentDescription"/>
-            -->
+                android:id="@+id/recordStop"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@mipmap/pause"
+                tools:ignore="ContentDescription"
+                 />
+
 
             <!--Play button-->
             <!--
