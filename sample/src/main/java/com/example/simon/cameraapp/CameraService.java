@@ -47,7 +47,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
+import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.sem;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.startCounter;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.stopOrderCameIn;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.imageConverter;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.isProcessingFrame;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewHeight;
@@ -83,7 +87,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     private LinearLayout mllFirst;
     public static CameraPreviews mCameraPreview;
     private SurfaceTexture surfaceTexture;
-
+    public static int counterForFrame;
     //public static int[] rgbBytes = null;
     //public static byte[][] yuvBytes = new byte[3][];
     //public static int yRowStride;
@@ -94,7 +98,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     private HandlerThread backgroundThread;
     public static Runnable imageSaver;
     public static final Object lockk = new Object();
-    public static final int SIZEOFRECENTPICS=30;
+    public static final int SIZEOFRECENTPICS=100;
    // public static  final MonitorObject myMonitorObject =new MonitorObject();
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
@@ -118,6 +122,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         }
        //  myMonitorObject = new MonitorObject();
         //recentPics.add(data);
+        counterForFrame=0;
         isProcessingFrame = true;
         //yuvBytes[0] = data;
         imageSaver= new Runnable() {
@@ -125,14 +130,31 @@ public class CameraService extends Service implements Camera.PreviewCallback {
             public void run() {
                 writeLock.lock();
                 try {
+                    if(stopOrderCameIn)
+                    {
+                        startCounter=false;
+                       // stopOrderCameIn =false;
+                    }
                     // access the resource protected by this lock
                     camera.addCallbackBuffer(data);
                     imageConverter.run();
                     recentPics.add(rgbFrameBitmap);
                     while (recentPics.size()>SIZEOFRECENTPICS)
                           recentPics.remove(0);
-                    System.out.println("AddingNEWDATA"+recentPics.size());
+                    System.out.println("AddingNEWDATA"+startCounter+"frameCounter"+counterForFrame);
+                    sem.acquire();
+                    if(  startCounter) {
+                        counterForFrame++;
+                       /* if(counterForFrame==1)
+                            synchronized (lockk) {
+                                lockk.notify();
+                            }*/
+                    }
+                    sem.release();
+
                     readyForNextImage2();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 } finally {
                     writeLock.unlock();
                 }
@@ -150,38 +172,13 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                     }
                 };
         readyForNextImage2();
-    /*
-        DetectorService.imageConverter =
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
-                    }
-                };
-
-        DetectorService.postInferenceCallback =
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        camera.addCallbackBuffer(data);
-                        isProcessingFrame = false;
-                    }
-                };
-        //System.out.println("PRE");
-
-        //System.out.println("PROCESS IMAGE");
-        if(show)
-            processImage();
-        else
-            readyForNextImage();*/
-
     }
     public static void readyForNextImage2() {
         if (imageSaver != null) {
-            synchronized (lockk) {
+          /*  synchronized (lockk) {
                 lockk.notify(); // Will wake up lock.wait()
-            }
-            (new Handler()).postDelayed(imageSaver ,1000);
+            }*/
+            (new Handler()).postDelayed(imageSaver ,100);
         }
     }
 

@@ -45,9 +45,11 @@ import jp.co.recruit_lifestyle.android.floatingview.FloatingViewManager;
 import jp.co.recruit_lifestyle.sample.MainActivity;
 
 import static com.example.simon.cameraapp.CameraService.SIZEOFRECENTPICS;
+import static com.example.simon.cameraapp.CameraService.counterForFrame;
 import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
 import static com.example.simon.cameraapp.CameraService.lockk;
+import static java.lang.Thread.sleep;
 
 
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -55,13 +57,13 @@ public class FloatingViewService extends Service implements FloatingViewListener
     private WindowManager mWindowManager;
     public static View mFloatingView;
     boolean created = false;
-    final int NUMOFFRAMESINSECTOWRITE=1;
+    final int NUMOFFRAMESINSECTOWRITE=10;
     public static final String EXTRA_CUTOUT_SAFE_AREA = "cutout_safe_area";
     private static Bitmap rgbFrameBitmap;
     private static final int NOTIFICATION_ID = 908114;
     public static byte[][] yuvBytes = new byte[3][];
     private static final String PREF_KEY_LAST_POSITION_X = "last_position_x";
-
+public static boolean startCounter;
     private static final String PREF_KEY_LAST_POSITION_Y = "last_position_y";
     public static int[] rgbBytes= new int[getPreviewWidth()*getPreviewHeight()];
 
@@ -72,12 +74,12 @@ public class FloatingViewService extends Service implements FloatingViewListener
     private static DisplayMetrics metrics;
     public static boolean show;
     public static Semaphore sem;
-    private boolean recordStopp;
+   // private boolean recordStopp;
     public static SeekableByteChannel out = null;
     AndroidSequenceEncoder encoder;
     // Binder given to clients
     IBinder mBinder = new LocalBinder();
-
+    public static boolean stopOrderCameIn;
     // Class used for the client Binder.
     @Override
     public IBinder onBind(Intent intent) {
@@ -95,11 +97,11 @@ public class FloatingViewService extends Service implements FloatingViewListener
         if (mFloatingViewManager != null) {
             return START_STICKY;
         }
-
+         stopOrderCameIn =false;
         //Inflate the floating view layout we created
         mFloatingView = LayoutInflater.from(this).inflate(R.layout.layout_floating_view, null);
         sem = new Semaphore(1);
-        recordStopp=false;
+       // recordStopp=false;
         out = null;
         //Add the view to the window.
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -159,23 +161,13 @@ public class FloatingViewService extends Service implements FloatingViewListener
                     }
                     // for Android use: AndroidSequenceEncoder
                     encoder = new AndroidSequenceEncoder(out, Rational.R(NUMOFFRAMESINSECTOWRITE, 1));
-
-                    //  ((LinkedList<Bitmap>) DetectorService.recentPics).
-                    // acquiring the lock
-                   /*
-                    if(!recordStopp){
-                        sem.acquire();
-                        CameraService.readLock.lock();
-                        pointer =(DetectorService.recentPics).iterator();
-                    }
-                    */
-                    //  Iterator<Bitmap> pointer=null;
                     int counter = 0;
                     boolean pointerAQ = false;
                     Iterator<Bitmap> pointer = (DetectorService.recentPics).iterator();
-                    int currentSize = DetectorService.recentPics.size();
-                    System.out.println("FirstInıt iterator");
-                    while (!recordStopp) {
+                    //int currentSize = DetectorService.recentPics.size();
+                    int getter =counter;
+                    System.out.println("FirstInıt iterator"+counterForFrame+"counter:"+counter);
+                    while( (counterForFrame>=counter)||(!stopOrderCameIn)) {
                         sem.acquire();
                         CameraService.readLock.lock();
                         try {
@@ -186,36 +178,38 @@ public class FloatingViewService extends Service implements FloatingViewListener
                                 // Encode the image
                                 encoder.encodeImage(bitmapData);
                                 counter++;
-                                System.out.println("Yeni resim geldi işlendi." + counter);
+                                getter= counter;
+                                System.out.println("Hazır işlendi." + counter);
+                            }
+                           else  {
+                                {
+                                    /*
+                                    sem.release();
+                                    CameraService.readLock.unlock();
+                                    synchronized (lockk) {
+                                        lockk.wait();
+                                    }
+                                    sem.acquire();*/
+                                    try {
+                                        Bitmap bitmapData = DetectorService.recentPics.get(getter);
+                                        encoder.encodeImage(bitmapData);
+                                        if (counter < SIZEOFRECENTPICS-1)
+                                            getter++;
+                                        counter++;
+                                        System.out.println("hazırdan olmayan islendi" + counter);
+                                    }catch (Exception e){}
+                                }
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
                         } finally {
-                            CameraService.readLock.unlock();
                             sem.release();
-                        }
-                        if (!pointer.hasNext()) {
-                            {
-                                synchronized (lockk) {
-                                    lockk.wait();
-                                }
-
-                                    sem.acquire();
-                                    CameraService.readLock.lock();
-                                    try {
-                                        Bitmap bitmapData = DetectorService.recentPics.get(counter);
-                                        encoder.encodeImage(bitmapData);
-                                        if (counter < SIZEOFRECENTPICS)
-                                            counter++;
-                                        System.out.println("Yeni resim geldi işlendi." + counter);
-                                    } catch (IOException e) {
-                                        System.out.println("ERROR WITH Lock" + e);
-                                    }
-
-                            }
+                            CameraService.readLock.unlock();
                         }
                     }
                     System.out.println("wHİLEDAN CKT");
+                    endVideoRecording();
+
                 } catch (InterruptedException | IOException e) {
                     e.printStackTrace();
                 }
@@ -281,10 +275,17 @@ public class FloatingViewService extends Service implements FloatingViewListener
         recordButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Thread thread =new Thread(videosaver);
-                thread.start();
-                recordButton.setVisibility(View.INVISIBLE);
-                recordStop.setVisibility(View.VISIBLE);
+                startCounter=true;
+
+                try {
+                    sleep(10);
+                    Thread thread =new Thread(videosaver);
+                    thread.start();
+                    recordButton.setVisibility(View.INVISIBLE);
+                    recordStop.setVisibility(View.VISIBLE);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -293,27 +294,12 @@ public class FloatingViewService extends Service implements FloatingViewListener
         recordStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                stopOrderCameIn =true;
                 // acquiring the lock
-                try {
-                    sem.acquire();
-                    recordStopp=true;
-                    // Finalize the encoding, i.e. clear the buffers, write the header, etc.
-                    try {
-                        encoder.finish();
-                        System.out.println("Encoding is done!");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        NIOUtils.closeQuietly(out);
-                        System.out.println("Video Saved!");
-                    }
-                } catch (InterruptedException e) {
-
-                    e.printStackTrace();
-                }
-                sem.release();
                 recordButton.setVisibility(View.VISIBLE);
                 recordStop.setVisibility(View.INVISIBLE);
+
+
             }
         });
 
@@ -415,7 +401,21 @@ public class FloatingViewService extends Service implements FloatingViewListener
         mFloatingViewManager.addViewToWindow(trafficSignView, options);
         show = true;
     }
+    public void endVideoRecording() {
+         // Finalize the encoding, i.e. clear the buffers, write the header, etc.
+            try {
+                encoder.finish();
+                System.out.println("Encoding is done!");
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                NIOUtils.closeQuietly(out);
+                counterForFrame=0;
+                System.out.println("Video Saved!");
+            }
 
+
+    };
     private boolean isViewCollapsed() {
         return mFloatingView == null || mFloatingView.findViewById(R.id.collapse_view).getVisibility() == View.VISIBLE;
     }
