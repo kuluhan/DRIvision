@@ -69,6 +69,7 @@ public class FrontCameraPreviews  extends SurfaceView implements SurfaceHolder.C
 
     }
 
+
     private Camera.Size getSmallestPictureSize(Camera.Parameters parameters) {
         Camera.Size result = null;
         for (Camera.Size size : parameters.getSupportedPictureSizes()) {
