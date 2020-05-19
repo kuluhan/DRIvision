@@ -184,7 +184,7 @@ public class DetectorService extends Service {
                     public void run() {
                         if(recentPics.size()>0){
                             System.out.println("recentpic is not empty");
-                            data = ( recentPics).get(recentPics.size());
+                            data = ( recentPics).get(recentPics.size()-1);
                             isProcessingFrame = true;
                             processImage();
                         }else {

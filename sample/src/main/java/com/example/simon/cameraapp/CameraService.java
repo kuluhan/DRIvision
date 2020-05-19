@@ -69,6 +69,9 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static ReentrantReadWriteLock lck =new ReentrantReadWriteLock();
     public static Lock writeLock =lck.writeLock();
     public static Lock readLock = lck.readLock();
+    public static ReentrantReadWriteLock lck2 =new ReentrantReadWriteLock();
+    public static Lock writeLock2 =lck2.writeLock();
+    public static Lock readLock2 = lck2.readLock();
     String[] ImagePath;
     List picList;
     Camera.PictureCallback mPicture;
@@ -141,20 +144,13 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                     recentPics.add(rgbFrameBitmap);
                     while (recentPics.size()>SIZEOFRECENTPICS)
                           recentPics.remove(0);
-                    System.out.println("AddingNEWDATA"+startCounter+"frameCounter"+counterForFrame);
-                    sem.acquire();
+                    System.out.println("AddingNEWDATA"+recentPics.size());
+                   writeLock2.lock();
                     if(  startCounter) {
                         counterForFrame++;
-                       /* if(counterForFrame==1)
-                            synchronized (lockk) {
-                                lockk.notify();
-                            }*/
                     }
-                    sem.release();
-
+                    writeLock2.unlock();
                     readyForNextImage2();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 } finally {
                     writeLock.unlock();
                 }
