@@ -42,6 +42,7 @@ import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
 
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
+import static org.tensorflow.lite.examples.detection.tracking.DetectorService.imageSaver;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.isProcessingFrame;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewHeight;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewWidth;
@@ -108,7 +109,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         recentPics.add(data);
         isProcessingFrame = true;
         yuvBytes[0] = data;
-        DetectorService.imageSaver= new Runnable() {
+        imageSaver= new Runnable() {
             @Override
             public void run() {
                 camera.addCallbackBuffer(data);
@@ -119,6 +120,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                 readyForNextImage();
             }
         };
+
         readyForNextImage();
     }
 

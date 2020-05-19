@@ -227,38 +227,6 @@ public class DetectorService extends Service {
             ImageUtils.saveBitmap(croppedBitmap);
         }
 
-        /*
-        if(flag > 0){
-            System.out.println("IMAGE " + flag);
-            int[]iImageArray = new int[croppedBitmap.getWidth()* croppedBitmap.getHeight()];                                   //initializing the array for the image size
-            croppedBitmap.getPixels(iImageArray, 0, croppedBitmap.getWidth(), 0, 0, croppedBitmap.getWidth(), croppedBitmap.getHeight());
-            for (int i=0; i < croppedBitmap.getHeight(); i++)
-            {
-                for(int j=0; j<croppedBitmap.getWidth(); j++)
-                {
-                    System.out.print(iImageArray[(i*croppedBitmap.getWidth()+j)]+ " ");
-                }
-                System.out.println();
-            }
-            flag--;
-        }
-
-         */
-
-
-
-        //System.out.println("MBOUNDED: " + mBounded);
-    /*
-    if(!mBounded) {
-      Intent mIntent = new Intent(this, ChatHeadService.class);
-      bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-    }
-
-     */
-       runInBackground = new Runnable() {
-                    @Override
-                    public void run() {
-        System.out.println("ne bascak");
         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
 
         float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
@@ -279,8 +247,6 @@ public class DetectorService extends Service {
                     changeSpeedSign(result.getTitle());
                     previousLabel = result.getTitle();
                 }
-            }
-        }
 
         computingDetection = false;
         readyForNextImage();
@@ -289,8 +255,7 @@ public class DetectorService extends Service {
     }
 
    };
-       Thread thread = new Thread(runInBackground);
-       thread.start();
+
     }
     public enum DetectorMode {
         TF_OD_API;
