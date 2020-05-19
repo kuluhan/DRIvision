@@ -1,12 +1,21 @@
 package jp.co.recruit_lifestyle.sample.service;
+import org.jcodec.api.android.AndroidSequenceEncoder;
+import java.sql.Timestamp;
+import java.util.Date;
+import org.jcodec.common.io.NIOUtils;
+import org.jcodec.common.io.SeekableByteChannel;
+import org.jcodec.common.model.Rational;
+import org.tensorflow.lite.examples.detection.tracking.DetectorService;
 
 import android.app.Notification;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
@@ -18,25 +27,43 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
+
+import com.example.simon.cameraapp.CameraService;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.concurrent.Semaphore;
 
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewListener;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewManager;
 import jp.co.recruit_lifestyle.sample.MainActivity;
 
+import static com.example.simon.cameraapp.CameraService.SIZEOFRECENTPICS;
+import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
+import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
+import static com.example.simon.cameraapp.CameraService.lockk;
+
+
+@RequiresApi(api = Build.VERSION_CODES.KITKAT)
 public class FloatingViewService extends Service implements FloatingViewListener {
     private WindowManager mWindowManager;
     public static View mFloatingView;
     boolean created = false;
+    final int NUMOFFRAMESINSECTOWRITE=1;
     public static final String EXTRA_CUTOUT_SAFE_AREA = "cutout_safe_area";
-
+    private static Bitmap rgbFrameBitmap;
     private static final int NOTIFICATION_ID = 908114;
-
+    public static byte[][] yuvBytes = new byte[3][];
     private static final String PREF_KEY_LAST_POSITION_X = "last_position_x";
 
     private static final String PREF_KEY_LAST_POSITION_Y = "last_position_y";
-
+    public static int[] rgbBytes= new int[getPreviewWidth()*getPreviewHeight()];
 
     private static FloatingViewManager mFloatingViewManager;
     private static ImageView trafficSignView;
@@ -44,7 +71,10 @@ public class FloatingViewService extends Service implements FloatingViewListener
     private static FloatingViewManager.Options options;
     private static DisplayMetrics metrics;
     public static boolean show;
-
+    public static Semaphore sem;
+    private boolean recordStopp;
+    public static SeekableByteChannel out = null;
+    AndroidSequenceEncoder encoder;
     // Binder given to clients
     IBinder mBinder = new LocalBinder();
 
@@ -68,7 +98,9 @@ public class FloatingViewService extends Service implements FloatingViewListener
 
         //Inflate the floating view layout we created
         mFloatingView = LayoutInflater.from(this).inflate(R.layout.layout_floating_view, null);
-
+        sem = new Semaphore(1);
+        recordStopp=false;
+        out = null;
         //Add the view to the window.
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -106,7 +138,89 @@ public class FloatingViewService extends Service implements FloatingViewListener
                 stopSelf();
             }
         });
+        Runnable videosaver= new Runnable() {
+            @Override
+            public void run() {
+                File file = new File(getExternalFilesDir(null), File.separator + "driVideos");
+                if (!file.exists()) {
+                    file.mkdirs();
+                }
+                Date date = new Date();
+                Timestamp ts = new Timestamp(date.getTime());
+                File file2 = new File(file, ts + ".mp4");
+                String path = file2.getPath();
+                System.out.println(path);
+                try {
+                    try {
+                        out = NIOUtils.writableFileChannel(path);
+                        System.out.println("yok yok:" + out);
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    // for Android use: AndroidSequenceEncoder
+                    encoder = new AndroidSequenceEncoder(out, Rational.R(NUMOFFRAMESINSECTOWRITE, 1));
 
+                    //  ((LinkedList<Bitmap>) DetectorService.recentPics).
+                    // acquiring the lock
+                   /*
+                    if(!recordStopp){
+                        sem.acquire();
+                        CameraService.readLock.lock();
+                        pointer =(DetectorService.recentPics).iterator();
+                    }
+                    */
+                    //  Iterator<Bitmap> pointer=null;
+                    int counter = 0;
+                    boolean pointerAQ = false;
+                    Iterator<Bitmap> pointer = (DetectorService.recentPics).iterator();
+                    int currentSize = DetectorService.recentPics.size();
+                    System.out.println("FirstInıt iterator");
+                    while (!recordStopp) {
+                        sem.acquire();
+                        CameraService.readLock.lock();
+                        try {
+                            // Generate the image, for Android use Bitmap
+                            //earlier images
+                            if (pointer.hasNext()) {
+                                Bitmap bitmapData = pointer.next();
+                                // Encode the image
+                                encoder.encodeImage(bitmapData);
+                                counter++;
+                                System.out.println("Yeni resim geldi işlendi." + counter);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            CameraService.readLock.unlock();
+                            sem.release();
+                        }
+                        if (!pointer.hasNext()) {
+                            {
+                                synchronized (lockk) {
+                                    lockk.wait();
+                                }
+
+                                    sem.acquire();
+                                    CameraService.readLock.lock();
+                                    try {
+                                        Bitmap bitmapData = DetectorService.recentPics.get(counter);
+                                        encoder.encodeImage(bitmapData);
+                                        if (counter < SIZEOFRECENTPICS)
+                                            counter++;
+                                        System.out.println("Yeni resim geldi işlendi." + counter);
+                                    } catch (IOException e) {
+                                        System.out.println("ERROR WITH Lock" + e);
+                                    }
+
+                            }
+                        }
+                    }
+                    System.out.println("wHİLEDAN CKT");
+                } catch (InterruptedException | IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
 
 //Set the view while floating view is expanded.
 //Set the play button.
@@ -133,20 +247,8 @@ public class FloatingViewService extends Service implements FloatingViewListener
             }
         });
 
+  */
 
-//Set the pause button.
-        ImageView prevButton = (ImageView) mFloatingView.findViewById(R.id.prev_btn);
-        prevButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(created == false)
-                {
-                    createOne();
-                }
-            }
-        });
-
-         */
 
 
 //Set the close button
@@ -172,8 +274,48 @@ public class FloatingViewService extends Service implements FloatingViewListener
 
             }
         });
+         ImageView recordStop = (ImageView) mFloatingView.findViewById(R.id.recordStop);
+        recordStop.setVisibility(View.INVISIBLE);
+        //Recording last 30 secs and rest.
+        ImageView recordButton = (ImageView) mFloatingView.findViewById(R.id.record);
+        recordButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Thread thread =new Thread(videosaver);
+                thread.start();
+                recordButton.setVisibility(View.INVISIBLE);
+                recordStop.setVisibility(View.VISIBLE);
+            }
+        });
 
+//Stoping and finishing record
 
+        recordStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // acquiring the lock
+                try {
+                    sem.acquire();
+                    recordStopp=true;
+                    // Finalize the encoding, i.e. clear the buffers, write the header, etc.
+                    try {
+                        encoder.finish();
+                        System.out.println("Encoding is done!");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        NIOUtils.closeQuietly(out);
+                        System.out.println("Video Saved!");
+                    }
+                } catch (InterruptedException e) {
+
+                    e.printStackTrace();
+                }
+                sem.release();
+                recordButton.setVisibility(View.VISIBLE);
+                recordStop.setVisibility(View.INVISIBLE);
+            }
+        });
 
         mFloatingView.findViewById(R.id.root_container).setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
@@ -255,7 +397,6 @@ public class FloatingViewService extends Service implements FloatingViewListener
                 startActivity(intent);
             }
         });
-
          */
 
         mFloatingViewManager = new FloatingViewManager(this, this);
@@ -274,6 +415,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
         mFloatingViewManager.addViewToWindow(trafficSignView, options);
         show = true;
     }
+
     private boolean isViewCollapsed() {
         return mFloatingView == null || mFloatingView.findViewById(R.id.collapse_view).getVisibility() == View.VISIBLE;
     }

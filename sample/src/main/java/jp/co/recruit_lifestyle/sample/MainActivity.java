@@ -190,16 +190,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
          */
 
-
-
-
         //Toolbar toolbar = findViewById(R.id.toolbar);
         //setSupportActionBar(toolbar);
 
          /*
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         */
-
 
     }
 
