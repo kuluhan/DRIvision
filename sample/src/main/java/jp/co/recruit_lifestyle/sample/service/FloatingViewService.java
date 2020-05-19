@@ -166,50 +166,44 @@ public static boolean startCounter;
                     Iterator<Bitmap> pointer = (DetectorService.recentPics).iterator();
                     //int currentSize = DetectorService.recentPics.size();
                     int getter =counter;
-                    System.out.println("FirstInıt iterator"+counterForFrame+"counter:"+counter);
-                    while( (counterForFrame>=counter)||(!stopOrderCameIn)) {
-                        sem.acquire();
-                        CameraService.readLock.lock();
-                        try {
-                            // Generate the image, for Android use Bitmap
-                            //earlier images
-                            if (pointer.hasNext()) {
-                                Bitmap bitmapData = pointer.next();
-                                // Encode the image
-                                encoder.encodeImage(bitmapData);
-                                counter++;
-                                getter= counter;
-                                System.out.println("Hazır işlendi." + counter);
-                            }
-                           else  {
-                                {
-                                    /*
-                                    sem.release();
-                                    CameraService.readLock.unlock();
-                                    synchronized (lockk) {
+                   // System.out.println("FirstInıt iterator"+counterForFrame+"counter:"+counter);
+                    CameraService.readLock2.lock();
+                        while ((counterForFrame >= counter)) {
+                            CameraService.readLock2.unlock();
+                          //  System.out.println("total frame counter: " + counterForFrame + " counter: " + counter + "  StopOrder:" + stopOrderCameIn);
+                            //
+                            // sem.acquire();
+                            CameraService.readLock.lock();
+                            try {
+                                // Generate the image, for Android use Bitmap
+                                //earlier images
+                                if(counter<counterForFrame) {
+                                    Bitmap bitmapData = DetectorService.recentPics.get(getter);
+                                    encoder.encodeImage(bitmapData);
+                                    if (counter < SIZEOFRECENTPICS - 1)
+                                        getter++;
+                                    counter++;
+                                    System.out.println("Resim islendi" + counter);
+                                }
+                                else {
+                                    if(!stopOrderCameIn)
+                                   {synchronized (lockk) {
                                         lockk.wait();
                                     }
-                                    sem.acquire();*/
-                                    try {
-                                        Bitmap bitmapData = DetectorService.recentPics.get(getter);
-                                        encoder.encodeImage(bitmapData);
-                                        if (counter < SIZEOFRECENTPICS-1)
-                                            getter++;
-                                        counter++;
-                                        System.out.println("hazırdan olmayan islendi" + counter);
-                                    }catch (Exception e){}
+                                   }else
+                                       break;
                                 }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } finally {
+                                System.out.println("total frame counter: " + counterForFrame + " counter: " + counter + "  StopOrder:" + stopOrderCameIn);
+                              // sem.release();
+                                CameraService.readLock.unlock();
                             }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } finally {
-                            sem.release();
-                            CameraService.readLock.unlock();
+                            CameraService.readLock2.lock();
                         }
-                    }
                     System.out.println("wHİLEDAN CKT");
                     endVideoRecording();
-
                 } catch (InterruptedException | IOException e) {
                     e.printStackTrace();
                 }
@@ -410,7 +404,9 @@ public static boolean startCounter;
                 e.printStackTrace();
             } finally {
                 NIOUtils.closeQuietly(out);
+                CameraService.writeLock2.lock();
                 counterForFrame=0;
+                CameraService.writeLock2.unlock();
                 System.out.println("Video Saved!");
             }
 
