@@ -1,5 +1,5 @@
 <!-- Thanks @domenukk -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">DRIVision</string>
     <string name="chathead_content_title">Demo Chat: Active</string>
     <string name="content_text">Demo running.</string>
@@ -13,9 +13,12 @@
     <string name="mail_address">example@example.com</string>
     <string name="mail_title">Title</string>
     <string name="mail_content">Message</string>
+    <string name="application_logo" tools:ignore="MissingTranslation">Application Logo</string>
     <string name="touch_finished_position" formatted="false">Current position (%d,%d)</string>
     <string name="deleted_soon">FloatingView will be deleted soon.</string>
     <string name="finish_deleted">FloatingView has been deleted.</string>
-    <string name="default_floatingview_channel_id">default_floatingview_channel</string>
-    <string name="default_floatingview_channel_name">Default Channel</string>
+    <string name="splash_app_name" tools:ignore="MissingTranslation">D R I V I S I O N</string>
+    <string name="splash_slogan" tools:ignore="MissingTranslation">Driving Assistance Made Simpler</string>
+    <string name="default_floatingview_channel_id" tools:ignore="MissingTranslation">default_floatingview_channel</string>
+    <string name="default_floatingview_channel_name" tools:ignore="MissingTranslation">Default Channel</string>
 </resources>

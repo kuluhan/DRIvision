@@ -11,39 +11,44 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-feature android:name="android.hardware.camera"/>
-    <uses-feature android:name="android.hardware.camera.autofocus"/>
-    <uses-feature android:name="android.hardware.camera.front"/>
-    <uses-feature android:name="android.hardware.camera.front.autofocus"/>
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature android:name="android.hardware.camera.front" />
+    <uses-feature android:name="android.hardware.camera.front.autofocus" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/drivision"
         android:label="@string/app_name"
-        android:theme="@style/AppBaseTheme">
+        android:theme="@style/AppTheme">
+
         <service
             android:name="org.tensorflow.lite.examples.detection.tracking.DetectorService"
             android:enabled="true"
             android:exported="true"
-            android:stopWithTask="true"></service>
+            android:stopWithTask="true" />
 
-        <activity
-            android:name="jp.co.recruit_lifestyle.sample.MainActivity"
-            android:label="@string/app_name"
-            android:screenOrientation="fullSensor"
-            android:launchMode="singleInstance">
+        <activity android:name="jp.co.recruit_lifestyle.sample.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="jp.co.recruit_lifestyle.sample.MainActivity"
+            android:label="@string/app_name"
+            android:launchMode="singleInstance"
+            android:screenOrientation="fullSensor">
+        </activity>
         <activity
             android:name="jp.co.recruit_lifestyle.sample.DeleteActionActivity"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
             android:taskAffinity="jp.co.recruit.floatingview.ChatHeadActivity" />
-        <activity android:name="com.example.simon.cameraapp.ImageList"/>
+        <activity android:name="com.example.simon.cameraapp.ImageList" />
 
         <service
             android:name="jp.co.recruit_lifestyle.sample.service.ChatHeadService"
@@ -53,8 +58,15 @@
             android:exported="false" />
         <service
             android:name="jp.co.recruit_lifestyle.sample.service.FloatingViewService"
-            android:exported="false" android:stopWithTask="true" />
-        <service android:name="com.example.simon.cameraapp.CameraService" android:stopWithTask="true"/>
+            android:exported="false"
+            android:stopWithTask="true" />
+        <service
+            android:name="com.example.simon.cameraapp.CameraService"
+            android:stopWithTask="true" />
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
     </application>
 
 </manifest>
