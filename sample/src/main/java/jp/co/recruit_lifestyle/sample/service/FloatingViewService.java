@@ -1,6 +1,7 @@
 package jp.co.recruit_lifestyle.sample.service;
 import org.jcodec.api.android.AndroidSequenceEncoder;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.io.SeekableByteChannel;
@@ -13,9 +14,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
@@ -50,6 +53,7 @@ import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
 import static com.example.simon.cameraapp.CameraService.lockk;
 import static java.lang.Thread.sleep;
+import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 
 
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -58,6 +62,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
     public static View mFloatingView;
     boolean created = false;
     final int NUMOFFRAMESINSECTOWRITE=10;
+    final int VIDEOFRAMELENGHT=200;
     public static final String EXTRA_CUTOUT_SAFE_AREA = "cutout_safe_area";
     private static Bitmap rgbFrameBitmap;
     private static final int NOTIFICATION_ID = 908114;
@@ -73,13 +78,14 @@ public static boolean startCounter;
     private static FloatingViewManager.Options options;
     private static DisplayMetrics metrics;
     public static boolean show;
+    public static ImageView recordButton;
     public static Semaphore sem;
    // private boolean recordStopp;
     public static SeekableByteChannel out = null;
     AndroidSequenceEncoder encoder;
     // Binder given to clients
-    IBinder mBinder = new LocalBinder();
-    public static boolean stopOrderCameIn;
+    public  IBinder mBinder = new LocalBinder();
+    //public static boolean stopOrderCameIn;
     // Class used for the client Binder.
     @Override
     public IBinder onBind(Intent intent) {
@@ -97,7 +103,6 @@ public static boolean startCounter;
         if (mFloatingViewManager != null) {
             return START_STICKY;
         }
-         stopOrderCameIn =false;
         //Inflate the floating view layout we created
         mFloatingView = LayoutInflater.from(this).inflate(R.layout.layout_floating_view, null);
         sem = new Semaphore(1);
@@ -162,53 +167,73 @@ public static boolean startCounter;
                     // for Android use: AndroidSequenceEncoder
                     encoder = new AndroidSequenceEncoder(out, Rational.R(NUMOFFRAMESINSECTOWRITE, 1));
                     int counter = 0;
-                    boolean pointerAQ = false;
-                    Iterator<Bitmap> pointer = (DetectorService.recentPics).iterator();
                     //int currentSize = DetectorService.recentPics.size();
-                    int getter =counter;
-                   // System.out.println("FirstInıt iterator"+counterForFrame+"counter:"+counter);
-                    CameraService.readLock2.lock();
-                        while ((counterForFrame >= counter)) {
-                            CameraService.readLock2.unlock();
-                          //  System.out.println("total frame counter: " + counterForFrame + " counter: " + counter + "  StopOrder:" + stopOrderCameIn);
-                            //
-                            // sem.acquire();
-                            CameraService.readLock.lock();
-                            try {
-                                // Generate the image, for Android use Bitmap
-                                //earlier images
-                                if(counter<counterForFrame) {
-                                    Bitmap bitmapData = DetectorService.recentPics.get(getter);
-                                    encoder.encodeImage(bitmapData);
-                                    if (counter < SIZEOFRECENTPICS - 1)
-                                        getter++;
+                    int getter = counter;
+                    ArrayList<Bitmap> copied = null;
+                    ArrayList<Bitmap> newPart = new ArrayList<>();
+                    // System.out.println("FirstInıt iterator"+counterForFrame+"counter:"+counter);
+                    while ((VIDEOFRAMELENGHT > counter)) {
+                        //  System.out.println("total frame counter: " + counterForFrame + " counter: " + counter + "  StopOrder:" + stopOrderCameIn);
+                        // sem.acquire();
+                        CameraService.readLock.lock();
+                        try {
+                            // Generate the image, for Android use Bitmap
+                            //earlier images
+                            if (counter == 0) {
+                                copied = new ArrayList<>();
+                                for (Bitmap bitmap : DetectorService.recentPics) {
+                                    //Add the object clones
                                     counter++;
-                                    System.out.println("Resim islendi" + counter);
+                                    copied.add(bitmap.copy(bitmap.getConfig(), true));
                                 }
-                                else {
-                                    if(!stopOrderCameIn)
-                                   {synchronized (lockk) {
-                                        lockk.wait();
-                                    }
-                                   }else
-                                       break;
-                                }
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            } finally {
-                                System.out.println("total frame counter: " + counterForFrame + " counter: " + counter + "  StopOrder:" + stopOrderCameIn);
-                              // sem.release();
+                            } else {
+                                //System.out.println("BURAYAAAA");
                                 CameraService.readLock.unlock();
+                                synchronized (lockk) {
+                                    lockk.wait();
+                                }
+                                CameraService.readLock.lock();
+                                getter = DetectorService.recentPics.size() - 1;
+                                Bitmap bitmapData = DetectorService.recentPics.get(getter);
+                                newPart.add(bitmapData.copy(bitmapData.getConfig(), false));
+                                counter++;
+                              //  System.out.println("Resim islendi" + counter);
                             }
-                            CameraService.readLock2.lock();
+                            if (closeAppStopDetection)
+                                break;
+                        } finally {
+                            // System.out.println("total frame counter: " + counterForFrame + " counter: " + counter + "  StopOrder:" + stopOrderCameIn);
+                            // sem.release();
+                            CameraService.readLock.unlock();
                         }
+                    }
                     System.out.println("wHİLEDAN CKT");
+                    for (int l = 0; l < copied.size()-1; l++) {
+                        Bitmap bitmapData = copied.get(l);
+                        try {
+                            encoder.encodeImage(bitmapData);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println("Resim yazıldı" + l);
+                    }
+                    for (int l = 0; l < newPart.size()-1; l++) {
+                        Bitmap bitmapData = newPart.get(l);
+                        try {
+                            encoder.encodeImage(bitmapData);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println("Resim yazıldı" + l);
+                    }
                     endVideoRecording();
-                } catch (InterruptedException | IOException e) {
+
+
+                } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-        };
+        }            ;
 
 //Set the view while floating view is expanded.
 //Set the play button.
@@ -265,18 +290,15 @@ public static boolean startCounter;
          ImageView recordStop = (ImageView) mFloatingView.findViewById(R.id.recordStop);
         recordStop.setVisibility(View.INVISIBLE);
         //Recording last 30 secs and rest.
-        ImageView recordButton = (ImageView) mFloatingView.findViewById(R.id.record);
+      recordButton = (ImageView) mFloatingView.findViewById(R.id.record);
         recordButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startCounter=true;
-
                 try {
                     sleep(10);
                     Thread thread =new Thread(videosaver);
                     thread.start();
-                    recordButton.setVisibility(View.INVISIBLE);
-                    recordStop.setVisibility(View.VISIBLE);
+                    recordButton.setColorFilter(Color.DKGRAY);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -285,17 +307,6 @@ public static boolean startCounter;
 
 //Stoping and finishing record
 
-        recordStop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stopOrderCameIn =true;
-                // acquiring the lock
-                recordButton.setVisibility(View.VISIBLE);
-                recordStop.setVisibility(View.INVISIBLE);
-
-
-            }
-        });
 
         mFloatingView.findViewById(R.id.root_container).setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
@@ -404,12 +415,9 @@ public static boolean startCounter;
                 e.printStackTrace();
             } finally {
                 NIOUtils.closeQuietly(out);
-                CameraService.writeLock2.lock();
-                counterForFrame=0;
-                CameraService.writeLock2.unlock();
                 System.out.println("Video Saved!");
+                recordButton.clearColorFilter();
             }
-
 
     };
     private boolean isViewCollapsed() {
