@@ -40,7 +40,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 
-public class FloatingViewManager implements ScreenChangedListener, View.OnTouchListener, TrashViewListener {
+public class FloatingViewManager implements ScreenChangedListener, View.OnTouchListener{
 
     public static final int DISPLAY_MODE_SHOW_ALWAYS = 1;
 
@@ -91,7 +91,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
 
     private final FullscreenObserverView mFullscreenObserverView;
 
-    private final TrashView mTrashView;
+   // private final TrashView mTrashView;
 
     private final FloatingViewListener mFloatingViewListener;
 
@@ -125,9 +125,9 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
 
         mFloatingViewList = new ArrayList<>();
         mFullscreenObserverView = new FullscreenObserverView(context, this);
-        mTrashView = new TrashView(context);
+       // mTrashView = new TrashView(context);
     }
-
+/*
     private boolean isIntersectWithTrash() {
         if (!mTrashView.isTrashEnabled()) {
             return false;
@@ -136,7 +136,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
         mTargetFloatingView.getWindowDrawingRect(mFloatingViewRect);
         return Rect.intersects(mTrashViewRect, mFloatingViewRect);
     }
-
+*/
     @Override
     public void onScreenChanged(Rect windowRect, int visibility) {
         // detect status bar
@@ -180,18 +180,18 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
                 final FloatingView floatingView = mFloatingViewList.get(i);
                 floatingView.setVisibility(isFitSystemWindowTop ? View.GONE : View.VISIBLE);
             }
-            mTrashView.dismiss();
+           // mTrashView.dismiss();
         }
         else if (state == FloatingView.STATE_INTERSECTING) {
             mTargetFloatingView.setFinishing();
-            mTrashView.dismiss();
+            //mTrashView.dismiss();
         }
     }
 
     /**
      * Update ActionTrashIcon
      */
-    @Override
+ /*   @Override
     public void onUpdateActionTrashIcon() {
         mTrashView.updateActionTrashIcon(mTargetFloatingView.getMeasuredWidth(), mTargetFloatingView.getMeasuredHeight(), mTargetFloatingView.getShape());
     }
@@ -222,6 +222,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
         }
 
     }
+*/
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
@@ -237,26 +238,28 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
         if (action == MotionEvent.ACTION_DOWN) {
             mIsMoveAccept = true;
         }
-        else if (action == MotionEvent.ACTION_MOVE) {
-            final boolean isIntersecting = isIntersectWithTrash();
+       /* else if (action == MotionEvent.ACTION_MOVE) {
+          //  final boolean isIntersecting = isIntersectWithTrash();
             final boolean isIntersect = state == FloatingView.STATE_INTERSECTING;
-            if (isIntersecting) {
+           if (isIntersecting) {
                 mTargetFloatingView.setIntersecting((int) mTrashView.getTrashIconCenterX(), (int) mTrashView.getTrashIconCenterY());
             }
             if (isIntersecting && !isIntersect) {
                 mTargetFloatingView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                mTrashView.setScaleTrashIcon(true);
+               // mTrashView.setScaleTrashIcon(true);
             }
             else if (!isIntersecting && isIntersect) {
                 mTargetFloatingView.setNormal();
-                mTrashView.setScaleTrashIcon(false);
+               //mTrashView.setScaleTrashIcon(false);
             }
 
         }
+        */
+
         else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (state == FloatingView.STATE_INTERSECTING) {
                 mTargetFloatingView.setFinishing();
-                mTrashView.setScaleTrashIcon(false);
+               // mTrashView.setScaleTrashIcon(false);
             }
             mIsMoveAccept = false;
 
@@ -267,42 +270,42 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
                 mFloatingViewListener.onTouchFinished(isFinishing, params.x, params.y);
             }
         }
-
+/*
         if (state == FloatingView.STATE_INTERSECTING) {
             mTrashView.onTouchFloatingView(event, mFloatingViewRect.left, mFloatingViewRect.top);
         } else {
             final WindowManager.LayoutParams params = mTargetFloatingView.getWindowLayoutParams();
             mTrashView.onTouchFloatingView(event, params.x, params.y);
         }
-
+*/
         return false;
     }
-
-    /**
-     * @param resId drawable ID
-     */
-    public void setFixedTrashIconImage(@DrawableRes int resId) {
+    /*
+        /**
+         * @param resId drawable ID
+         */
+   /* public void setFixedTrashIconImage(@DrawableRes int resId) {
         mTrashView.setFixedTrashIconImage(resId);
     }
 
     /**
      * @param resId drawable ID
      */
-    public void setActionTrashIconImage(@DrawableRes int resId) {
+   /* public void setActionTrashIconImage(@DrawableRes int resId) {
         mTrashView.setActionTrashIconImage(resId);
     }
 
     /**
      * @param drawable Drawable
      */
-    public void setFixedTrashIconImage(Drawable drawable) {
+   /* public void setFixedTrashIconImage(Drawable drawable) {
         mTrashView.setFixedTrashIconImage(drawable);
     }
 
     /**
      * @param drawable Drawable
      */
-    public void setActionTrashIconImage(Drawable drawable) {
+  /*  public void setActionTrashIconImage(Drawable drawable) {
         mTrashView.setActionTrashIconImage(drawable);
     }
 
@@ -320,10 +323,10 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
             for (FloatingView floatingView : mFloatingViewList) {
                 floatingView.setVisibility(View.GONE);
             }
-            mTrashView.dismiss();
+           // mTrashView.dismiss();
         }
     }
-
+/*
     public void setTrashViewEnabled(boolean enabled) {
         mTrashView.setTrashEnabled(enabled);
     }
@@ -331,7 +334,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
     public boolean isTrashViewEnabled() {
         return mTrashView.isTrashEnabled();
     }
-
+*/
     /**
      * Set the DisplayCutout's safe area
      * Note:You must set the Cutout obtained on portrait orientation.
@@ -382,16 +385,16 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
         }
         mFloatingViewList.add(floatingView);
         // TrashView
-        mTrashView.setTrashViewListener(this);
+     //   mTrashView.setTrashViewListener(this);
 
         mWindowManager.addView(floatingView, floatingView.getWindowLayoutParams());
         if (isFirstAttach) {
             mWindowManager.addView(mFullscreenObserverView, mFullscreenObserverView.getWindowLayoutParams());
             mTargetFloatingView = floatingView;
         } else {
-            removeViewImmediate(mTrashView);
+          //  removeViewImmediate(mTrashView);
         }
-        mWindowManager.addView(mTrashView, mTrashView.getWindowLayoutParams());
+        //mWindowManager.addView(mTrashView, mTrashView.getWindowLayoutParams());
     }
 
     /**
@@ -418,7 +421,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
      */
     public void removeAllViewToWindow() {
         removeViewImmediate(mFullscreenObserverView);
-        removeViewImmediate(mTrashView);
+        //removeViewImmediate(mTrashView);
         final int size = mFloatingViewList.size();
         for (int i = 0; i < size; i++) {
             final FloatingView floatingView = mFloatingViewList.get(i);

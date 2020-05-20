@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public static boolean closeAppStopDetection;
 
     FloatingViewControlFragment fragment;
-
+    public static Runnable UIrunnable ;
     String[] ImagePath;
     private ImageView btnChangeCam;
     private ImageView btnSave;
@@ -78,8 +78,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private boolean isChecked = false;
     boolean mBounded;
     boolean detectorBounded;
+    public static Thread detectorServiceThread;
     FloatingViewService mServer;
     DetectorService detectorServer;
+   public static Handler floatingHandler =new Handler();
     public static boolean created = false;
 
 
@@ -129,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
 
         if(!created) {
-            runOnUiThread(new Runnable() {
+            UIrunnable = new Runnable() {
                 @Override
                 public void run() {
                     // create default notification channel
@@ -151,7 +153,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         ft.commit();
                     }
                 }
-            });
+            };
+            runOnUiThread(UIrunnable );
             created = true;
         }
 
@@ -163,11 +166,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mBounded = true;
         }
 
-        if(!detectorBounded) {
+        /*if(!detectorBounded) {
             Intent mIntent = new Intent(this, DetectorService.class);
             bindService(mIntent, mConnection, BIND_AUTO_CREATE);
             detectorBounded = true;
-        }
+        }*/
 
         Switch feature1 = (Switch)findViewById(R.id.switch1);
         Switch feature2  = (Switch) findViewById(R.id.switch2);
@@ -187,18 +190,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         bindService(mIntent, mConnection, BIND_AUTO_CREATE);
                         MainActivity.this.startService(mIntent);
                         */
-                        Thread t = new Thread(){
+                         detectorServiceThread = new Thread(){
                             public void run(){
                                  bindService(mIntent, mConnection, BIND_AUTO_CREATE);
                         MainActivity.this.startService(mIntent);
                              }
                         };
-                        t.start();
+                        detectorServiceThread.start();
                     }
                 }
                 else {
                     mServer.destroy();
-                    detectorServer.destroy();
                 }
                 if (feature2.isChecked())
                     str2 = feature3.getTextOn().toString();
@@ -215,27 +217,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         } else {
             requestPermission();
         }
-
-
-        /*
-        this.mllFirst = (LinearLayout) findViewById(R.id.backcamera_preview);
-        this.mCamera = getCameraInstance(0);
-
-        //this.frontCamera = getCameraInstance(1);
-        this.mCameraPreview = new CameraPreviews(this, this.mCamera);
-        //this.frontCameraPreview = new FrontCameraPreviews(this, this.frontCamera);
-        this.mllFirst.addView(this.mCameraPreview);
-        //this.mllSecond.addView(this.frontCameraPreview);
-
-         */
-
-        //Toolbar toolbar = findViewById(R.id.toolbar);
-        //setSupportActionBar(toolbar);
-
-         /*
-        getSupportActionBar().setDisplayShowTitleEnabled(false);
-        */
-
     }
 
     @SuppressLint({"NewApi"})
@@ -253,7 +234,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public synchronized void onResume() {
         LOGGER.d("onResume " + this);
         super.onResume();
-
+/*
         if(!mBounded) {
             Intent mIntent = new Intent(this, FloatingViewService.class);
             bindService(mIntent, mConnection, BIND_AUTO_CREATE);
@@ -263,12 +244,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Intent mIntent = new Intent(this, DetectorService.class);
             bindService(mIntent, mConnection, BIND_AUTO_CREATE);
             detectorBounded = true;
-        }
+        }*/
         /*
         handlerThread = new HandlerThread("inference");
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
-
          */
     }
 
@@ -293,9 +273,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
 
          */
-
-
-
         //unbindService(mConnection);
         super.onPause();
     }
@@ -313,16 +290,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public synchronized void onDestroy() {
+        super.onDestroy();
         LOGGER.d("onDestroy " + this);
-        if(mBounded) {
+        if (mBounded) {
             unbindService(mConnection);
             mBounded = false;
         }
-        if(detectorBounded) {
-            unbindService(mConnection);
-            detectorBounded = false;
-        }
-        super.onDestroy();
     }
 
     public static synchronized void runInBackground(final Runnable r) {
