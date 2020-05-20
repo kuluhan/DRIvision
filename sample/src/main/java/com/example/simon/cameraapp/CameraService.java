@@ -51,7 +51,7 @@ import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.sem;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.startCounter;
-import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.stopOrderCameIn;
+
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.imageConverter;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.isProcessingFrame;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewHeight;
@@ -61,8 +61,6 @@ import static org.tensorflow.lite.examples.detection.tracking.DetectorService.rg
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.yuvBytes;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.recentPics;
 
-class MonitorObject{
-}
 
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
 public class CameraService extends Service implements Camera.PreviewCallback {
@@ -133,11 +131,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
             public void run() {
                 writeLock.lock();
                 try {
-                    if(stopOrderCameIn)
-                    {
-                        startCounter=false;
-                       // stopOrderCameIn =false;
-                    }
                     // access the resource protected by this lock
                     camera.addCallbackBuffer(data);
                     imageConverter.run();
@@ -145,11 +138,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                     while (recentPics.size()>SIZEOFRECENTPICS)
                           recentPics.remove(0);
                     System.out.println("AddingNEWDATA"+recentPics.size());
-                   writeLock2.lock();
-                    if(  startCounter) {
-                        counterForFrame++;
-                    }
-                    writeLock2.unlock();
                     readyForNextImage2();
                 } finally {
                     writeLock.unlock();
@@ -171,9 +159,9 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     }
     public static void readyForNextImage2() {
         if (imageSaver != null) {
-          /*  synchronized (lockk) {
+            synchronized (lockk) {
                 lockk.notify(); // Will wake up lock.wait()
-            }*/
+            }
             (new Handler()).postDelayed(imageSaver ,100);
         }
     }

@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private static final int CODE_DRAW_OVER_OTHER_APP_PERMISSION = 2084;
 
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
+    public static boolean closeAppStopDetection;
 
     FloatingViewControlFragment fragment;
 
@@ -75,8 +77,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private HandlerThread handlerThread;
     private boolean isChecked = false;
     boolean mBounded;
+    boolean detectorBounded;
     FloatingViewService mServer;
+    DetectorService detectorServer;
     public static boolean created = false;
+
 
     ServiceConnection mConnection = new ServiceConnection() {
         @SuppressLint("WrongConstant")
@@ -85,17 +90,34 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             //Toast.makeText(DetectorActivity.this, "Service is disconnected", 1000).show();
             System.out.println("DISCONNECTED");
             mBounded = false;
+            detectorBounded=false;
             mServer = null;
+            detectorServer=null;
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.KITKAT)
         @SuppressLint("WrongConstant")
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            //System.out.println(name.getClass().getName()+" otek"+FloatingViewService.LocalBinder.class.getName());
+            if(service.getClass().getName().equals(FloatingViewService.LocalBinder.class.getName()))
+                onServiceConnected1( name, (FloatingViewService.LocalBinder) service);
+            else if(service.getClass().getName().equals(DetectorService.LocalBinder.class.getName()))
+                onServiceConnected2( name, (DetectorService.LocalBinder) service);
             //Toast.makeText(DetectorActivity.this, "Service is connected", 1000).show();
+            System.out.println("General service override");
+        }
+        public void onServiceConnected1(ComponentName name, FloatingViewService.LocalBinder service) {
             System.out.println("CONNECTED");
             mBounded = true;
-            FloatingViewService.LocalBinder mLocalBinder = (FloatingViewService.LocalBinder)service;
+            FloatingViewService.LocalBinder mLocalBinder = service;
             mServer = mLocalBinder.getServerInstance();
+        }
+        public void onServiceConnected2(ComponentName name, DetectorService.LocalBinder service) {
+            System.out.println("CONNECTED");
+            detectorBounded = true;
+            DetectorService.LocalBinder mLocalBinder =service;
+            detectorServer = mLocalBinder.getServerInstance();
         }
     };
 
@@ -141,11 +163,18 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mBounded = true;
         }
 
+        if(!detectorBounded) {
+            Intent mIntent = new Intent(this, DetectorService.class);
+            bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+            detectorBounded = true;
+        }
+
         Switch feature1 = (Switch)findViewById(R.id.switch1);
         Switch feature2  = (Switch) findViewById(R.id.switch2);
         Switch feature3 = (Switch) findViewById(R.id.switch3);
         Button submit = (Button) findViewById(R.id.getBtn);
         submit.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void onClick(View v) {
                 String str1, str2;
@@ -153,12 +182,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     //str1 = feature1.getTextOn().toString();
                     if(!mServer.show) {
                         mServer.showSpeedLimit();
-                        Intent intent2 = new Intent(MainActivity.this, DetectorService.class);
-                        MainActivity.this.startService(intent2);
+                       Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
+                       /*
+                        bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                        MainActivity.this.startService(mIntent);
+                        */
+                        Thread t = new Thread(){
+                            public void run(){
+                                 bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                        MainActivity.this.startService(mIntent);
+                             }
+                        };
+                        t.start();
                     }
                 }
                 else {
                     mServer.destroy();
+                    detectorServer.destroy();
                 }
                 if (feature2.isChecked())
                     str2 = feature3.getTextOn().toString();
@@ -220,6 +260,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             bindService(mIntent, mConnection, BIND_AUTO_CREATE);
             mBounded = true;
         }
+        if(!detectorBounded) {
+            Intent mIntent = new Intent(this, DetectorService.class);
+            bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+            detectorBounded = true;
+        }
         /*
         handlerThread = new HandlerThread("inference");
         handlerThread.start();
@@ -237,6 +282,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             unbindService(mConnection);
             mBounded = false;
         }
+
         /*
         handlerThread.quitSafely();
         try {
@@ -262,6 +308,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             unbindService(mConnection);
             mBounded = false;
         }
+
         super.onStop();
     }
 
@@ -271,6 +318,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         if(mBounded) {
             unbindService(mConnection);
             mBounded = false;
+        }
+        if(detectorBounded) {
+            unbindService(mConnection);
+            detectorBounded = false;
         }
         super.onDestroy();
     }
@@ -290,9 +341,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
                 Intent intent = new Intent(MainActivity.this, CameraService.class);
                 MainActivity.this.startService(intent);
-
-                Intent intent2 = new Intent(MainActivity.this, DetectorService.class);
-                MainActivity.this.startService(intent2);
+            /*  Intent intent2 = new Intent(MainActivity.this, DetectorService.class);
+                MainActivity.this.startService(intent2);*/
             } else {
                 requestPermission();
             }

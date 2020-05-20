@@ -9,6 +9,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.media.Image;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -33,10 +34,12 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import jp.co.recruit_lifestyle.sample.MainActivity;
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
 import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
+import static com.example.simon.cameraapp.CameraService.readLock;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.changeSpeedSign;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.DetectorMode.TF_OD_API;
@@ -44,6 +47,16 @@ import static org.tensorflow.lite.examples.detection.tracking.DetectorService.De
 
 public class DetectorService extends Service {
 
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
+
+    public class LocalBinder extends Binder {
+        public DetectorService getServerInstance() {
+            return DetectorService.this;
+        }
+    }
     private static final Logger LOGGER = new Logger();
 
     // Configuration values for the prepackaged SSD model.
@@ -61,7 +74,7 @@ public class DetectorService extends Service {
     private static final boolean SAVE_PREVIEW_BITMAP = false;
     private static final float TEXT_SIZE_DIP = 10;
     public static Runnable postInferenceCallback;
-
+    public  IBinder mBinder = new LocalBinder();
     OverlayView trackingOverlay;
     private Integer sensorOrientation;
     public static int previewWidth = 0;
@@ -132,7 +145,7 @@ public class DetectorService extends Service {
                             getApplicationContext(), "Classifier could not be initialized", Toast.LENGTH_SHORT);
             toast.show();
         }
-
+        MainActivity.closeAppStopDetection=false;
         previewWidth = getPreviewWidth();
         previewHeight = getPreviewHeight();
 
@@ -182,6 +195,7 @@ public class DetectorService extends Service {
                     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
                     @Override
                     public void run() {
+                        readLock.lock();
                         if(recentPics.size()>0){
                             System.out.println("recentpic is not empty");
                             data = ( recentPics).get(recentPics.size()-1);
@@ -192,15 +206,11 @@ public class DetectorService extends Service {
                             readyForNextImage();
                         }
                         isProcessingFrame = false;
+                        readLock.unlock();
                     }
                 };
         readyForNextImage();
        // processImage();
-    }
-    @Override
-    public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -287,4 +297,9 @@ public class DetectorService extends Service {
         return yuvBytes[0];
     }
 
+    public void destroy() {
+        //TODO: DO LATER IN RUNNABLE
+        MainActivity.closeAppStopDetection= true;
+
+    }
 }
