@@ -66,6 +66,7 @@ import static org.tensorflow.lite.examples.detection.tracking.DetectorService.re
 public class CameraService extends Service implements Camera.PreviewCallback {
     public static ReentrantReadWriteLock lck =new ReentrantReadWriteLock();
     public static Lock writeLock =lck.writeLock();
+    public static Handler imagesaverHandler=   (new Handler());
     public static Lock readLock = lck.readLock();
     public static ReentrantReadWriteLock lck2 =new ReentrantReadWriteLock();
     public static Lock writeLock2 =lck2.writeLock();
@@ -129,19 +130,20 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         imageSaver= new Runnable() {
             @Override
             public void run() {
-                writeLock.lock();
-                try {
-                    // access the resource protected by this lock
-                    camera.addCallbackBuffer(data);
-                    imageConverter.run();
-                    recentPics.add(rgbFrameBitmap);
-                    while (recentPics.size()>SIZEOFRECENTPICS)
-                          recentPics.remove(0);
-                    System.out.println("AddingNEWDATA"+recentPics.size());
-                    readyForNextImage2();
-                } finally {
-                    writeLock.unlock();
-                }
+                                   writeLock.lock();
+                    try {
+                        // access the resource protected by this lock
+                        camera.addCallbackBuffer(data);
+                        imageConverter.run();
+                        recentPics.add(rgbFrameBitmap);
+                        while (recentPics.size() > SIZEOFRECENTPICS)
+                            recentPics.remove(0);
+                        System.out.println("AddingNEWDATA" + recentPics.size());
+                        readyForNextImage2();
+                    } finally {
+                        writeLock.unlock();
+                    }
+
             }
         };
                 imageConverter =
@@ -158,12 +160,14 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         readyForNextImage2();
     }
     public static void readyForNextImage2() {
-        if (imageSaver != null) {
+
+        if( (imageSaver != null) &&(imagesaverHandler!=null)){
             synchronized (lockk) {
                 lockk.notify(); // Will wake up lock.wait()
             }
-            (new Handler()).postDelayed(imageSaver ,100);
+            imagesaverHandler.postDelayed(imageSaver ,100);
         }
+
     }
 
     private final TextureView.SurfaceTextureListener surfaceTextureListener =

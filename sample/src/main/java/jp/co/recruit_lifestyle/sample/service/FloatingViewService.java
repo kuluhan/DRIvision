@@ -51,9 +51,15 @@ import static com.example.simon.cameraapp.CameraService.SIZEOFRECENTPICS;
 import static com.example.simon.cameraapp.CameraService.counterForFrame;
 import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
+import static com.example.simon.cameraapp.CameraService.imageSaver;
+import static com.example.simon.cameraapp.CameraService.imagesaverHandler;
 import static com.example.simon.cameraapp.CameraService.lockk;
+import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
+import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
+import static jp.co.recruit_lifestyle.sample.MainActivity.detectorServiceThread;
+import static jp.co.recruit_lifestyle.sample.MainActivity.floatingHandler;
 
 
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -61,6 +67,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
     private WindowManager mWindowManager;
     public static View mFloatingView;
     boolean created = false;
+    public static  Thread threadVideoSaver;
     final int NUMOFFRAMESINSECTOWRITE=10;
     final int VIDEOFRAMELENGHT=200;
     public static final String EXTRA_CUTOUT_SAFE_AREA = "cutout_safe_area";
@@ -142,12 +149,33 @@ public static boolean startCounter;
             @Override
             public void onClick(View view) {
                 //close the service and remove the from from the window
+                //TODO : close app
+                closeAppStopDetection=true;
+                synchronized (lockk) {
+                    lockk.notify();
+                }
+               detectorServiceThread.interrupt();
+                threadVideoSaver.interrupt();
                 stopSelf();
+                floatingHandler.removeCallbacks(UIrunnable);
+                imagesaverHandler.removeCallbacks(imageSaver);
+                floatingHandler=null;
+                imagesaverHandler=null;
+                onDestroy();
+               // interrupt();
             }
         });
         Runnable videosaver= new Runnable() {
             @Override
             public void run() {
+                if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
+                    try {
+                        throw new InterruptedException();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
                 File file = new File(getExternalFilesDir(null), File.separator + "driVideos");
                 if (!file.exists()) {
                     file.mkdirs();
@@ -192,6 +220,9 @@ public static boolean startCounter;
                                 synchronized (lockk) {
                                     lockk.wait();
                                 }
+                                if(closeAppStopDetection){
+                                    break;
+                                }
                                 CameraService.readLock.lock();
                                 getter = DetectorService.recentPics.size() - 1;
                                 Bitmap bitmapData = DetectorService.recentPics.get(getter);
@@ -227,8 +258,13 @@ public static boolean startCounter;
                         System.out.println("Resim yazıldı" + l);
                     }
                     endVideoRecording();
-
-
+                    if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
+                        try {
+                            throw new InterruptedException();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -296,8 +332,8 @@ public static boolean startCounter;
             public void onClick(View view) {
                 try {
                     sleep(10);
-                    Thread thread =new Thread(videosaver);
-                    thread.start();
+                     threadVideoSaver =new Thread(videosaver);
+                    threadVideoSaver.start();
                     recordButton.setColorFilter(Color.DKGRAY);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -391,8 +427,8 @@ public static boolean startCounter;
          */
 
         mFloatingViewManager = new FloatingViewManager(this, this);
-        mFloatingViewManager.setFixedTrashIconImage(R.drawable.ic_trash_fixed);
-        mFloatingViewManager.setActionTrashIconImage(R.drawable.ic_trash_action);
+      //  mFloatingViewManager.setFixedTrashIconImage(R.drawable.ic_trash_fixed);
+    //    mFloatingViewManager.setActionTrashIconImage(R.drawable.ic_trash_action);
         // Setting Options(you can change options at any time)
         loadDynamicOptions();
         // Initial Setting Options (you can't change options after created.)
@@ -427,6 +463,8 @@ public static boolean startCounter;
     public void onDestroy() {
         super.onDestroy();
         if (mFloatingView != null) mWindowManager.removeView(mFloatingView);
+        mFloatingViewManager.removeAllViewToWindow();
+
     }
     @Override
     public void onFinishFloatingView() {

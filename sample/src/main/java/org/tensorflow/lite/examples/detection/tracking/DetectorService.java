@@ -40,6 +40,7 @@ import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
 import static com.example.simon.cameraapp.CameraService.readLock;
+import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.changeSpeedSign;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.DetectorMode.TF_OD_API;
@@ -124,7 +125,6 @@ public class DetectorService extends Service {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             Size size =  bundle.getSize("size");
         }
-
          */
 
         int cropSize = TF_OD_API_INPUT_SIZE;
@@ -145,7 +145,7 @@ public class DetectorService extends Service {
                             getApplicationContext(), "Classifier could not be initialized", Toast.LENGTH_SHORT);
             toast.show();
         }
-        MainActivity.closeAppStopDetection=false;
+        closeAppStopDetection=false;
         previewWidth = getPreviewWidth();
         previewHeight = getPreviewHeight();
 
@@ -195,18 +195,27 @@ public class DetectorService extends Service {
                     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
                     @Override
                     public void run() {
-                        readLock.lock();
-                        if(recentPics.size()>0){
-                            System.out.println("recentpic is not empty");
-                            data = ( recentPics).get(recentPics.size()-1);
-                            isProcessingFrame = true;
-                            processImage();
-                        }else {
-                            System.out.println("DetectorService:0 recent pics");
-                            readyForNextImage();
+                        if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
+                            try {
+                                throw new InterruptedException();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
-                        isProcessingFrame = false;
-                        readLock.unlock();
+                        else{
+                            readLock.lock();
+                            if (recentPics.size() > 0) {
+                                System.out.println("recentpic is not empty");
+                                data = (recentPics).get(recentPics.size() - 1);
+                                isProcessingFrame = true;
+                                processImage();
+                            } else {
+                                System.out.println("DetectorService:0 recent pics");
+                                readyForNextImage();
+                            }
+                            isProcessingFrame = false;
+                            readLock.unlock();
+                        }
                     }
                 };
         readyForNextImage();
@@ -299,7 +308,8 @@ public class DetectorService extends Service {
 
     public void destroy() {
         //TODO: DO LATER IN RUNNABLE
-        MainActivity.closeAppStopDetection= true;
+
+        closeAppStopDetection= true;
 
     }
 }
