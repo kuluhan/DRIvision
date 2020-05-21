@@ -83,8 +83,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     DetectorService detectorServer;
    public static Handler floatingHandler =new Handler();
     public static boolean created = false;
-    public static Thread cameraThread;
-
 
     ServiceConnection mConnection = new ServiceConnection() {
         @SuppressLint("WrongConstant")

@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -49,7 +50,6 @@ import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
-import static jp.co.recruit_lifestyle.sample.MainActivity.cameraThread;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.sem;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.startCounter;
@@ -132,22 +132,22 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         imageSaver= new Runnable() {
             @Override
             public void run() {
-                                   writeLock.lock();
-                    try {
-                        // access the resource protected by this lock
-                        camera.addCallbackBuffer(data);
-                        imageConverter.run();
-                        recentPics.add(rgbFrameBitmap);
-                        while (recentPics.size() > SIZEOFRECENTPICS)
-                            recentPics.remove(0);
-                     //  System.out.println("AddingNEWDATA" + recentPics.size());
-                    } finally {
-                        writeLock.unlock();
-                        readyForNextImage2();
-                    }
+                writeLock.lock();
+                try {
+                    // access the resource protected by this lock
+                    camera.addCallbackBuffer(data);
+                    imageConverter.run();
+                    recentPics.add(rgbFrameBitmap);
+                    while (recentPics.size() > SIZEOFRECENTPICS)
+                        recentPics.remove(0);
+                    //  System.out.println("AddingNEWDATA" + recentPics.size());
+                    readyForNextImage2();
+                }finally {
+                    writeLock.unlock();
+                }
             }
         };
-                imageConverter =
+        imageConverter =
                 new Runnable() {
                     @Override
                     public void run() {
@@ -158,24 +158,17 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
                     }
                 };
-        cameraThread = new Thread(      imageSaver  );
-        cameraThread.start();
+
+        readyForNextImage2();
 
     }
     public static void readyForNextImage2() {
-        if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
-            try {
-                throw new InterruptedException();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
         if( (imageSaver != null) ){
             synchronized (lockk) {
                 lockk.notify(); // Will wake up lock.wait()
             }
-            imageSaver.run();
+            imagesaverHandler = new Handler();
+            imagesaverHandler.postDelayed(imageSaver, 100);
         }
 
     }
@@ -281,90 +274,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     }
 
 
-    /*
-    class takePicture implements Camera.PictureCallback {
-        int id;
-        takePicture(int id) {
-            this.id = id;
-        }
-
-        @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
-        public void onPictureTaken(byte[] data, Camera camera) {
-            CameraService.this.count++;
-            Log.d("Image Path", "Path is : ");
-            File pictureFile = CameraService.getOutputMediaFile(count);
-
-            if (pictureFile != null) {
-                Log.d("Image Path", "Path is : " + pictureFile.getAbsolutePath());
-            }
-            *//*
-            if (previewWidth == 0 || previewHeight == 0) {
-                return;
-            }
-            if (rgbBytes == null) {
-                rgbBytes = new int[previewWidth * previewHeight];
-            }
-            try {
-                final Image image = reader.acquireLatestImage();
-
-                if (image == null) {
-                    return;
-                }
-
-                if (isProcessingFrame) {
-                    image.close();
-                    return;
-                }
-                isProcessingFrame = true;
-                Trace.beginSection("imageAvailable");
-                final Image.Plane[] planes = image.getPlanes();
-                fillBytes(planes, yuvBytes);
-                yRowStride = planes[0].getRowStride();
-                final int uvRowStride = planes[1].getRowStride();
-                final int uvPixelStride = planes[1].getPixelStride();
-
-                imageConverter =
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                ImageUtils.convertYUV420ToARGB8888(
-                                        yuvBytes[0],
-                                        yuvBytes[1],
-                                        yuvBytes[2],
-                                        previewWidth,
-                                        previewHeight,
-                                        yRowStride,
-                                        uvRowStride,
-                                        uvPixelStride,
-                                        rgbBytes);
-                            }
-                        };
-
-                postInferenceCallback =
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                image.close();
-                                isProcessingFrame = false;
-                            }
-                        };
-
-                processImage();
-            } catch (final Exception e) {
-                LOGGER.e(e, "Exception!");
-                Trace.endSection();
-                return;
-            }
-            Trace.endSection();
-
-             *//*
-            Bitmap bmp = BitmapFactory.decodeByteArray(data,0, data.length);
-
-            //safeToTakePicture = true;
-            System.out.println("repeat");
-        }
-    }*/
-
     private void startBackgroundThread() {
         backgroundThread = new HandlerThread("CameraBackground");
         backgroundThread.start();
@@ -423,7 +332,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT);
         mWindowManager.addView(tex, params);
-
 
         super.onCreate();
     }

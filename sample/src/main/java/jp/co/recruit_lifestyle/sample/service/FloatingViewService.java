@@ -57,7 +57,6 @@ import static com.example.simon.cameraapp.CameraService.lockk;
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
-import static jp.co.recruit_lifestyle.sample.MainActivity.cameraThread;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.MainActivity.detectorServiceThread;
 import static jp.co.recruit_lifestyle.sample.MainActivity.floatingHandler;
@@ -151,18 +150,6 @@ public static boolean startCounter;
             public void onClick(View view) {
                 //close the service and remove the from from the window
                 //TODO : close app
-                closeAppStopDetection=true;
-                synchronized (lockk) {
-                    lockk.notify();
-                }
-                detectorServiceThread.interrupt();
-                threadVideoSaver.interrupt();
-                cameraThread.interrupt();
-                stopSelf();
-                floatingHandler.removeCallbacks(UIrunnable);
-                imagesaverHandler.removeCallbacks(imageSaver);
-                floatingHandler=null;
-                imagesaverHandler=null;
                 onDestroy();
             }
         });
@@ -463,6 +450,17 @@ public static boolean startCounter;
     @Override
     public void onDestroy() {
         super.onDestroy();
+        closeAppStopDetection=true;
+        synchronized (lockk) {
+            lockk.notify();
+        }
+        detectorServiceThread.interrupt();
+        threadVideoSaver.interrupt();
+        stopSelf();
+        floatingHandler.removeCallbacks(UIrunnable);
+        imagesaverHandler.removeCallbacks(imageSaver);
+        floatingHandler=null;
+        imagesaverHandler=null;
         if (mFloatingView != null) mWindowManager.removeView(mFloatingView);
         mFloatingViewManager.removeAllViewToWindow();
     }
