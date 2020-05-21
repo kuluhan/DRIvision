@@ -19,6 +19,11 @@
     <string name="finish_deleted">FloatingView has been deleted.</string>
     <string name="splash_app_name" tools:ignore="MissingTranslation">D R I V I S I O N</string>
     <string name="splash_slogan" tools:ignore="MissingTranslation">Driving Assistance Made Simpler</string>
+    <string name="welcome_message" tools:ignore="MissingTranslation">Welcome!</string>
+    <string name="switch_3" tools:ignore="MissingTranslation">Collision Warning</string>
+    <string name="switch_1" tools:ignore="MissingTranslation">Traffic Sign Detection</string>
+    <string name="switch_2" tools:ignore="MissingTranslation">Lane Detection</string>
+    <string name="apply" tools:ignore="MissingTranslation"><u>Apply</u></string>
     <string name="default_floatingview_channel_id" tools:ignore="MissingTranslation">default_floatingview_channel</string>
     <string name="default_floatingview_channel_name" tools:ignore="MissingTranslation">Default Channel</string>
 </resources>
