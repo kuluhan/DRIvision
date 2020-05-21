@@ -42,6 +42,7 @@ import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
 import static com.example.simon.cameraapp.CameraService.readLock;
 import static java.lang.Thread.sleep;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
+import static jp.co.recruit_lifestyle.sample.MainActivity.detectorServiceThread;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.changeSpeedSign;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.DetectorMode.TF_OD_API;
@@ -164,9 +165,43 @@ public class DetectorService extends Service {
         cropToFrameTransform = new Matrix();
         frameToCropTransform.invert(cropToFrameTransform);
 
+        postInferenceCallback =
+                new Runnable() {
+                    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+                    @Override
+                    public void run() {
+
+                        if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
+
+                            try {
+                                throw new InterruptedException();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else{
+                            readLock.lock();
+                            if (recentPics.size() > 0) {
+                               // System.out.println("recentpic is not empty");
+                                Bitmap bmp = (recentPics).get(recentPics.size() - 1);
+                                data = bmp.copy(bmp.getConfig(), false);
+                                readLock.unlock();
+                                isProcessingFrame = true;
+                                processImage();
+                                readyForNextImage();
+                            } else {
+                                System.out.println("DetectorService:0 recent pics");
+                                readLock.unlock();
+                            }
+                            isProcessingFrame = false;
+                        }
+                    }
+                };
         started = true;
         super.onStartCommand(intent, flags, startId);
-        sign_detect();
+        detectorServiceThread = new Thread(postInferenceCallback);
+        detectorServiceThread.start();
+     //   sign_detect();
         return Service.START_NOT_STICKY;
     }
 
@@ -188,44 +223,6 @@ public class DetectorService extends Service {
         return currentRatation;
     }
 
-    private void sign_detect(){
-        System.out.println("Sign Detect Entered");
-
-        postInferenceCallback =
-                new Runnable() {
-                    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-                    @Override
-                    public void run() {
-                        if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
-                            try {
-                                throw new InterruptedException();
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        else{
-                            readLock.lock();
-                            if (recentPics.size() > 0) {
-                                //System.out.println("recentpic is not empty");
-                                Bitmap bmp = (recentPics).get(recentPics.size() - 1);
-                                data = bmp.copy(bmp.getConfig(), false);
-                                readLock.unlock();
-                                isProcessingFrame = true;
-                                processImage();
-                                readyForNextImage();
-                            } else {
-                                System.out.println("DetectorService:0 recent pics");
-                                readLock.unlock();
-                                //readyForNextImage();
-                            }
-                            isProcessingFrame = false;
-
-                        }
-                    }
-                };
-        readyForNextImage();
-       // processImage();
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static void processImage() {
@@ -277,11 +274,10 @@ public class DetectorService extends Service {
     public static void readyForNextImage() {
         //System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
-            //System.out.println("Ready for new image");
+            System.out.println("Ready for new image");
+            postInferenceCallback.run();
 
-            //postInferenceCallback.run();
-
-            (new Handler()).postDelayed(postInferenceCallback, 100);
+           // (new Handler()).postDelayed(postInferenceCallback, 100);
 
         }
     }
@@ -314,10 +310,4 @@ public class DetectorService extends Service {
         return yuvBytes[0];
     }
 
-    public void destroy() {
-        //TODO: DO LATER IN RUNNABLE
-
-        closeAppStopDetection= true;
-
-    }
 }

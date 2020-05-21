@@ -155,16 +155,15 @@ public static boolean startCounter;
                 synchronized (lockk) {
                     lockk.notify();
                 }
-               detectorServiceThread.interrupt();
+                detectorServiceThread.interrupt();
                 threadVideoSaver.interrupt();
                 cameraThread.interrupt();
                 stopSelf();
                 floatingHandler.removeCallbacks(UIrunnable);
-                //imagesaverHandler.removeCallbacks(imageSaver);
+                imagesaverHandler.removeCallbacks(imageSaver);
                 floatingHandler=null;
                 imagesaverHandler=null;
                 onDestroy();
-               // interrupt();
             }
         });
         Runnable videosaver= new Runnable() {
