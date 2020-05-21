@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     DetectorService detectorServer;
    public static Handler floatingHandler =new Handler();
     public static boolean created = false;
+    public static Thread cameraThread;
 
 
     ServiceConnection mConnection = new ServiceConnection() {
@@ -154,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     }
                 }
             };
-            runOnUiThread(UIrunnable );
+            runOnUiThread(UIrunnable);
             created = true;
         }
 
@@ -185,15 +186,15 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     //str1 = feature1.getTextOn().toString();
                     if(!mServer.show) {
                         mServer.showSpeedLimit();
-                       Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
+                        Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
                        /*
                         bindService(mIntent, mConnection, BIND_AUTO_CREATE);
                         MainActivity.this.startService(mIntent);
                         */
                          detectorServiceThread = new Thread(){
                             public void run(){
-                                 bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-                        MainActivity.this.startService(mIntent);
+                                bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                                MainActivity.this.startService(mIntent);
                              }
                         };
                         detectorServiceThread.start();
@@ -201,6 +202,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
                 else {
                     mServer.destroy();
+                    unbindService(mConnection);
+                    detectorServiceThread.interrupt();
+                    try {
+                        detectorServiceThread.join();
+                        detectorServiceThread = null;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
                 if (feature2.isChecked())
                     str2 = feature3.getTextOn().toString();
@@ -213,7 +222,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         if (hasPermission()) {
             System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
             Intent intent = new Intent(MainActivity.this, CameraService.class);
-            MainActivity.this.startService(intent);
+
+            cameraThread = new Thread(){
+                public void run(){
+                    bindService(intent, mConnection, BIND_AUTO_CREATE);
+                    MainActivity.this.startService(intent);
+                }
+            };
+            cameraThread.start();
 
         } else {
             requestPermission();
@@ -321,7 +337,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         }
     }
-
+//TODO: SHOW DUZENLEMESİ
     private static boolean allPermissionsGranted(final int[] grantResults) {
         for (int result : grantResults) {
             if (result != PackageManager.PERMISSION_GRANTED) {

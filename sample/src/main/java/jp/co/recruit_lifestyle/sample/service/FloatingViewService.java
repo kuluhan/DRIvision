@@ -57,6 +57,7 @@ import static com.example.simon.cameraapp.CameraService.lockk;
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
+import static jp.co.recruit_lifestyle.sample.MainActivity.cameraThread;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.MainActivity.detectorServiceThread;
 import static jp.co.recruit_lifestyle.sample.MainActivity.floatingHandler;
@@ -112,7 +113,7 @@ public static boolean startCounter;
         }
         //Inflate the floating view layout we created
         mFloatingView = LayoutInflater.from(this).inflate(R.layout.layout_floating_view, null);
-        sem = new Semaphore(1);
+        //sem = new Semaphore(1);
        // recordStopp=false;
         out = null;
         //Add the view to the window.
@@ -156,9 +157,10 @@ public static boolean startCounter;
                 }
                detectorServiceThread.interrupt();
                 threadVideoSaver.interrupt();
+                cameraThread.interrupt();
                 stopSelf();
                 floatingHandler.removeCallbacks(UIrunnable);
-                imagesaverHandler.removeCallbacks(imageSaver);
+                //imagesaverHandler.removeCallbacks(imageSaver);
                 floatingHandler=null;
                 imagesaverHandler=null;
                 onDestroy();
@@ -464,7 +466,6 @@ public static boolean startCounter;
         super.onDestroy();
         if (mFloatingView != null) mWindowManager.removeView(mFloatingView);
         mFloatingViewManager.removeAllViewToWindow();
-
     }
     @Override
     public void onFinishFloatingView() {

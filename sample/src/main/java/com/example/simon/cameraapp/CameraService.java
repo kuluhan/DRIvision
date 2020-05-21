@@ -49,6 +49,7 @@ import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
+import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.sem;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.startCounter;
 
@@ -138,7 +139,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                         recentPics.add(rgbFrameBitmap);
                         while (recentPics.size() > SIZEOFRECENTPICS)
                             recentPics.remove(0);
-                        System.out.println("AddingNEWDATA" + recentPics.size());
+                        //System.out.println("AddingNEWDATA" + recentPics.size());
                         readyForNextImage2();
                     } finally {
                         writeLock.unlock();
@@ -160,6 +161,13 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         readyForNextImage2();
     }
     public static void readyForNextImage2() {
+        if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
+            try {
+                throw new InterruptedException();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
         if( (imageSaver != null) &&(imagesaverHandler!=null)){
             synchronized (lockk) {
