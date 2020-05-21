@@ -186,23 +186,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     //str1 = feature1.getTextOn().toString();
                     if(!mServer.show) {
                         mServer.showSpeedLimit();
-                        Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
-                       /*
-                        bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-                        MainActivity.this.startService(mIntent);
-                        */
-                         detectorServiceThread = new Thread(){
-                            public void run(){
+                         Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
                                 bindService(mIntent, mConnection, BIND_AUTO_CREATE);
                                 MainActivity.this.startService(mIntent);
-                             }
-                        };
-                        detectorServiceThread.start();
                     }
                 }
                 else {
                     mServer.destroy();
-                    unbindService(mConnection);
+                   // unbindService(mConnection);
                     detectorServiceThread.interrupt();
                     try {
                         detectorServiceThread.join();
@@ -222,15 +213,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         if (hasPermission()) {
             System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
             Intent intent = new Intent(MainActivity.this, CameraService.class);
-
-            cameraThread = new Thread(){
-                public void run(){
-                    bindService(intent, mConnection, BIND_AUTO_CREATE);
-                    MainActivity.this.startService(intent);
-                }
-            };
-            cameraThread.start();
-
+            bindService(intent, mConnection, BIND_AUTO_CREATE);
+            MainActivity.this.startService(intent);
         } else {
             requestPermission();
         }

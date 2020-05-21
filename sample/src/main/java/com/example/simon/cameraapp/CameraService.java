@@ -49,6 +49,7 @@ import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
+import static jp.co.recruit_lifestyle.sample.MainActivity.cameraThread;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.sem;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.startCounter;
@@ -139,12 +140,11 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                         recentPics.add(rgbFrameBitmap);
                         while (recentPics.size() > SIZEOFRECENTPICS)
                             recentPics.remove(0);
-                        //System.out.println("AddingNEWDATA" + recentPics.size());
-                        readyForNextImage2();
+                     //  System.out.println("AddingNEWDATA" + recentPics.size());
                     } finally {
                         writeLock.unlock();
+                        readyForNextImage2();
                     }
-
             }
         };
                 imageConverter =
@@ -158,7 +158,9 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
                     }
                 };
-        readyForNextImage2();
+        cameraThread = new Thread(      imageSaver  );
+        cameraThread.start();
+
     }
     public static void readyForNextImage2() {
         if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
@@ -169,11 +171,11 @@ public class CameraService extends Service implements Camera.PreviewCallback {
             }
         }
 
-        if( (imageSaver != null) &&(imagesaverHandler!=null)){
+        if( (imageSaver != null) ){
             synchronized (lockk) {
                 lockk.notify(); // Will wake up lock.wait()
             }
-            imagesaverHandler.postDelayed(imageSaver ,100);
+            imageSaver.run();
         }
 
     }
