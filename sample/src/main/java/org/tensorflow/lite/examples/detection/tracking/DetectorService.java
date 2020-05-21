@@ -41,6 +41,7 @@ import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
 import static com.example.simon.cameraapp.CameraService.readLock;
 import static java.lang.Thread.sleep;
+import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.MainActivity.detectorServiceThread;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.changeSpeedSign;
@@ -103,6 +104,7 @@ public class DetectorService extends Service {
 
     private static Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
+    public static Handler handler;
 
     public DetectorService() {
     }
@@ -202,6 +204,7 @@ public class DetectorService extends Service {
         detectorServiceThread = new Thread(postInferenceCallback);
         detectorServiceThread.start();
      //   sign_detect();
+        handler = new Handler();
         return Service.START_NOT_STICKY;
     }
 
@@ -258,7 +261,13 @@ public class DetectorService extends Service {
                 System.out.println("RESULT ID: " + result.getTitle());
                 if (speedLabels.contains(result.getTitle()) && !result.getTitle().equals(previousLabel) && show) {
                     //mServer.changeSpeedSign(result.getTitle());
-                    changeSpeedSign(result.getTitle());
+                    UIrunnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            changeSpeedSign(result.getTitle());
+                        }
+                    };
+                    handler.post(UIrunnable);
                     previousLabel = result.getTitle();
                 }
             }
