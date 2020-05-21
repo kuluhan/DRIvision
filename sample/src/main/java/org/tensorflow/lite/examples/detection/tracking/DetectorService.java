@@ -40,6 +40,7 @@ import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
 import static com.example.simon.cameraapp.CameraService.readLock;
+import static java.lang.Thread.sleep;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.changeSpeedSign;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
@@ -205,16 +206,20 @@ public class DetectorService extends Service {
                         else{
                             readLock.lock();
                             if (recentPics.size() > 0) {
-                                System.out.println("recentpic is not empty");
-                                data = (recentPics).get(recentPics.size() - 1);
+                                //System.out.println("recentpic is not empty");
+                                Bitmap bmp = (recentPics).get(recentPics.size() - 1);
+                                data = bmp.copy(bmp.getConfig(), false);
+                                readLock.unlock();
                                 isProcessingFrame = true;
                                 processImage();
+                                readyForNextImage();
                             } else {
                                 System.out.println("DetectorService:0 recent pics");
-                                readyForNextImage();
+                                readLock.unlock();
+                                //readyForNextImage();
                             }
                             isProcessingFrame = false;
-                            readLock.unlock();
+
                         }
                     }
                 };
@@ -224,7 +229,7 @@ public class DetectorService extends Service {
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static void processImage() {
-        System.out.println("new image processing");
+        //System.out.println("new image processing");
         //System.out.println("PROCESS IMAGE");
         // No mutex needed as this method is not reentrant.
         if (computingDetection) {
@@ -262,7 +267,7 @@ public class DetectorService extends Service {
             }
         }
         computingDetection = false;
-        readyForNextImage();
+        //readyForNextImage();
     }
 
     public enum DetectorMode {
@@ -270,11 +275,14 @@ public class DetectorService extends Service {
     }
 
     public static void readyForNextImage() {
-        System.out.println("Called nextIm");
+        //System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
-            System.out.println("Ready for new image");
+            //System.out.println("Ready for new image");
+
             //postInferenceCallback.run();
-            (new Handler()).postDelayed(postInferenceCallback ,1000);
+
+            (new Handler()).postDelayed(postInferenceCallback, 100);
+
         }
     }
 
