@@ -3,7 +3,9 @@ package jp.co.recruit_lifestyle.sample;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 
 import jp.co.recruit.floatingview.R;
 
@@ -19,6 +21,19 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+        // Hide Navigation and Status Bar
+        View decorView = getWindow().getDecorView();
+
+        int uiOptions;
+        // Not displaying the status bar is only supported in SDK >= 16
+        if (Build.VERSION.SDK_INT >= 16) {
+            uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN;
+        } else {
+            uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        }
+        decorView.setSystemUiVisibility(uiOptions);
+
         // Set layout
         setContentView(R.layout.activity_splash);
 
