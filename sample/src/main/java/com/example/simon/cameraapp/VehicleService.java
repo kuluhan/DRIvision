@@ -7,10 +7,13 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Service;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
@@ -19,7 +22,11 @@ import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,16 +40,23 @@ import java.util.Collections;
 
 //import jp.co.recruit.floatingview.R;
 import jp.co.recruit.floatingview.R;
+import jp.co.recruit_lifestyle.sample.MainActivity;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.RequestBody;
+import static com.example.simon.cameraapp.CameraService.readLock;
+import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
+import static org.tensorflow.lite.examples.detection.tracking.DetectorService.recentPics;
 
-@RequiresApi(api = Build.VERSION_CODES.KITKAT)
+
+
 public class VehicleService extends Service  {
-    OkHttpClient client;
+    static Bitmap data;
+
+    public static OkHttpClient client;
     MediaType JSON;
     URL url;
     String host;
@@ -52,8 +66,10 @@ public class VehicleService extends Service  {
     String fileToRequest;
     String fileToRequest2;
     String fileName;
-    Runnable vehicleDetector;
+    public static Runnable vehicleDetector;
+    public static Thread vehicleThread;
     int k;
+    static boolean responseReceived = true;
     final double FILERESOLUTIONPERCENT= 1.5;
     ArrayList<ArrayList<Rectangle>> toRemember;
     MediaPlayer mp;
@@ -72,14 +88,13 @@ public class VehicleService extends Service  {
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
-        host = "192.168.1.22"; ///////////////////ip of digitalocean : 142.93.38.174
-        port = 20;
+        super.onStartCommand(intent, flags, startId);
+        System.out.println("başladı");
+        host = "142.93.38.174"; ///////////////////ip of digitalocean : 142.93.38.174 /// zeyn local ip 192.168.1.22
+        port = 8001;
         file = "/predict";
         protocol ="HTTP";
-        fileToRequest = "file1";
-        fileToRequest2 = "file2";
-        fileName ="img.jpg";
+
 
         //initialize empty vehicleList and load alarm sound
         toRemember =new ArrayList();
@@ -90,35 +105,66 @@ public class VehicleService extends Service  {
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-        client = new OkHttpClient().newBuilder().connectTimeout(10, TimeUnit.SECONDS)
+
+        client = new OkHttpClient().newBuilder().connectTimeout(0, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS).build();
 
         JSON = MediaType.parse("application/json; charset=utf-8");
         vehicleDetector = new Runnable(){
+            @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void run() {
-                readlock.lock();
-                try {
-                    // access the resource protected by this lock
-                    camera.addCallbackBuffer(data);
-                    imageConverter.run();
-                    recentPics.add(rgbFrameBitmap);
-                    while (recentPics.size() > SIZEOFRECENTPICS)
-                        recentPics.remove(0);
-                    //  System.out.println("AddingNEWDATA" + recentPics.size());
-                    readyForNextImage2();
-                }finally {
-                    readlock.unlock();
+                if (closeAppStopDetection || Thread.currentThread().isInterrupted()) {
+
+                    try {
+                        throw new InterruptedException();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                        readLock.lock();
+                        try {
+                            // access the resource protected by this lock
+                            Bitmap bmp = (recentPics).get(recentPics.size() - 1);
+                            data = bmp.copy(bmp.getConfig(), false);
+
+                        }finally {
+                            readLock.unlock();
+                        }
+
+                         try {
+                              makeGetRequest();
+                             SystemClock.sleep(500);
+
+                         } catch (IOException ignored) {
+                                System.out.println("IOException make request" + ignored);
+                         } catch (InterruptedException m) {
+                                System.out.println("InterruptedException " + m);
+                         }
+                        readyForNextIm();
+
                 }
             }
         };
-
+        vehicleThread =new Thread(vehicleDetector);
+        vehicleThread.start();
         return Service.START_NOT_STICKY;
+    }
+
+
+
+    public void readyForNextIm(){
+        if(vehicleDetector!=null)
+        {
+            vehicleDetector.run();
+            //(new Handler()).postDelayed(vehicleDetector, 1000);
+        }
 
     }
 
-    public void makeGetRequest(View v) throws IOException,InterruptedException {
+
+    public void makeGetRequest() throws IOException,InterruptedException {
         GetTask task = new GetTask();
         task.execute();
     }
@@ -129,7 +175,7 @@ public class VehicleService extends Service  {
         private Exception exception;
         protected  JSONObject doInBackground(Void... urls) {
             try {
-                // rastgee bi string verdim içine override için bir amaci yok
+                // rastgee bi string verdim iÃ§ine override iÃ§in bir amaci yok
                 return get(url.toString());
             } catch (Exception e) {
                 this.exception = e;
@@ -140,9 +186,10 @@ public class VehicleService extends Service  {
 
         protected void onPostExecute(JSONObject getResponse) {
             if (getResponse!=null) {
-                System.out.println(getResponse.toString());
+
                 try {
                     String vehiclestr =getResponse.get("vehicles").toString();
+                    System.out.println(vehiclestr);
                     vehiclestr= vehiclestr.substring(1,vehiclestr.length()-1);
                     JSONArray jaFiles= new JSONArray(vehiclestr);
 
@@ -178,6 +225,7 @@ public class VehicleService extends Service  {
                     Log.e("Error :(","--"+e);
                 }
             }
+
         }
         private boolean evaluateCrashing(){
 
@@ -211,8 +259,6 @@ public class VehicleService extends Service  {
                             return true;
                         }
                     }
-
-
                 }
                 if(remSize>3)
                     toRemember.remove(0);
@@ -226,7 +272,7 @@ public class VehicleService extends Service  {
             for(int c=0;c<list.size();c++)
             {
                 Rectangle cur= list.get(c);
-                if((Math.abs((given.getArea()/cur.getArea())-1)>0.3)&&((Math.abs(given.getX()/cur.getX()-1)<0.2))&&((Math.abs(given.getY()/cur.getY()-1)<0.2))) ///image yüzde 30dan fazla değişmediğyse
+                if((Math.abs((given.getArea()/cur.getArea())-1)>0.3)&&((Math.abs(given.getX()/cur.getX()-1)<0.2))&&((Math.abs(given.getY()/cur.getY()-1)<0.2))) ///image yÃ¼zde 30dan fazla deÄŸiÅŸmediÄŸyse
                     matches.add(c);
             }
             return matches;
@@ -239,8 +285,10 @@ public class VehicleService extends Service  {
                 System.out.println("k:"+k);
                 String img =k+".jpg";
                 k++;
-                Response response= makeRequest(img);
+
+                Response response= makeRequest();
                 JSONObject json = new JSONObject(response.body().string());
+
                 return json;
                 //  return new JSONObject(response.body().string());
 
@@ -252,13 +300,19 @@ public class VehicleService extends Service  {
 
             return null;
         }
-        private Response makeRequest(String img){
-            AssetManager assetManager = getAssets();
+        private Response makeRequest(){
+            //  AssetManager assetManager = getAssets();
             // make request to send picture && aws account belongs to Musab
+
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            data.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+            byte[] byteArray = stream.toByteArray();
+            data.recycle();
+
             MediaType mediaType = MediaType.parse("multipart/form-data; boundary=--------------------------205063402178265581033669");
             RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
-                    .addFormDataPart(fileToRequest, fileName,
-                            RequestBody.create(MediaType.parse("image/*jpg"), readImage(img, assetManager)))
+                    .addFormDataPart("fileToRequest", "fileName",
+                            RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
                     .build();
             Request request = new Request.Builder()
                     .url(url)
@@ -266,12 +320,16 @@ public class VehicleService extends Service  {
                     .addHeader("Content-Type", "multipart/form-data; boundary=--------------------------205063402178265581033669")
                     .build();
             try {
+
                 Response response = client.newCall(request).execute();
+
                 return response;
-            }catch (IOException e){}
+            }catch (IOException e){
+                System.out.println("make request execute exception bağlanamadı: " + e );
+            }
             return null;
         }
-        private byte[] readImage(String img, AssetManager assetManager){
+        /*private byte[] readImage(String img, AssetManager assetManager){
             InputStream inputStream = null;
             try {
                 inputStream = assetManager.open(img);
@@ -287,6 +345,7 @@ public class VehicleService extends Service  {
             input.compress(Bitmap.CompressFormat.JPEG, 100, stream);
             byte[] byteArray = stream.toByteArray();
             return byteArray;
-        }
+        }*/
     }
+
 }

@@ -54,6 +54,7 @@ import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
 import static com.example.simon.cameraapp.CameraService.imageSaver;
 import static com.example.simon.cameraapp.CameraService.imagesaverHandler;
 import static com.example.simon.cameraapp.CameraService.lockk;
+import static com.example.simon.cameraapp.VehicleService.vehicleThread;
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
@@ -455,6 +456,7 @@ public static boolean startCounter;
             lockk.notify();
         }
         detectorServiceThread.interrupt();
+        vehicleThread.interrupt();
         threadVideoSaver.interrupt();
         stopSelf();
         floatingHandler.removeCallbacks(UIrunnable);
