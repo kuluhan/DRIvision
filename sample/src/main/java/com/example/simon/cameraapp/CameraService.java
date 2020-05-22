@@ -297,30 +297,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         catch (Exception e){
             System.out.println("Camera init failed:"+e);
         }
-        /*
-        try {
-            mSurfaceView = new CameraPreviews(this, mServiceCamera);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println("SURFACE PREVIEW: " + mSurfaceView);
-
-         */
-        //this.frontCameraPreview = new FrontCameraPreviews(this, this.frontCamera);
-        System.out.println("CHECKPOINT");
-        //MainActivity.mllFirst.addView(mSurfaceView);
-
-        //mBackServiceCamera = MainActivity.frontCamera;
-        //mBackSurfaceView = MainActivity.frontCameraPreview;
-        /*
-        this.ImagePath = new String[2];
-        this.ImagePath[0] = "null";
-        this.ImagePath[1] = "null";
-
-         */
-        //this.mPicture = new takePicture(0);
-        //this.mPictureBack = new takePicture(1);
-
         tex = LayoutInflater.from(this).inflate(R.layout.texture, null);
         textureView =  tex.findViewById(R.id.texture);
         textureView.setSurfaceTextureListener(surfaceTextureListener);
