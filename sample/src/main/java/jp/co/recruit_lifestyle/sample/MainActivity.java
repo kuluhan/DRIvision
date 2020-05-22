@@ -34,7 +34,6 @@ import com.example.simon.cameraapp.CameraService;
 import com.example.simon.cameraapp.FaceService;
 import com.example.simon.cameraapp.FrontCameraPreviews;
 import com.example.simon.cameraapp.LaneService;
-import com.example.simon.cameraapp.VehicleService;
 
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.tracking.DetectorService;

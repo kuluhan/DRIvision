@@ -85,6 +85,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     private boolean isPlay = false;
     public static final String PREFS = "CAMERA_APP";
     protected SharedPreferences prefs;
+
     int count = 0;
     public static boolean safeToTakePicture = false;
     public static String TAG = "DualCamActivity";

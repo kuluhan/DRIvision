@@ -119,8 +119,8 @@ public class VehicleService extends Service  {
     }
 
     public void makeGetRequest(View v) throws IOException,InterruptedException {
-            GetTask task = new GetTask();
-            task.execute();
+        GetTask task = new GetTask();
+        task.execute();
     }
 
 
@@ -129,7 +129,7 @@ public class VehicleService extends Service  {
         private Exception exception;
         protected  JSONObject doInBackground(Void... urls) {
             try {
-               // rastgee bi string verdim içine override için bir amaci yok
+                // rastgee bi string verdim içine override için bir amaci yok
                 return get(url.toString());
             } catch (Exception e) {
                 this.exception = e;
@@ -148,20 +148,20 @@ public class VehicleService extends Service  {
 
                     ArrayList<ArrayList<Rectangle>> fileVehicleList= new ArrayList();
 
-                   for(int t=0;t<jaFiles.length();t++){
+                    for(int t=0;t<jaFiles.length();t++){
 
-                       String oneFileResult =jaFiles.get(t).toString();
-                       JSONArray picsVehic =new JSONArray(oneFileResult);
-                       ArrayList<Rectangle> recs=new ArrayList();
-                       for(int k=0;k<picsVehic.length();k++){
-                           String or=picsVehic.get(k).toString();
-                           String[] dividedRecInfo = or.substring(1,or.length()-1).split(",");
-                          Rectangle r= new Rectangle(dividedRecInfo[0],Math.round(Float.parseFloat(dividedRecInfo[1])),Math.round(Float.parseFloat(dividedRecInfo[2])),Math.round(Float.parseFloat(dividedRecInfo[3])),Math.round(Float.parseFloat(dividedRecInfo[4])),Float.parseFloat(dividedRecInfo[5]));
-                           recs.add(r);
-                       }
+                        String oneFileResult =jaFiles.get(t).toString();
+                        JSONArray picsVehic =new JSONArray(oneFileResult);
+                        ArrayList<Rectangle> recs=new ArrayList();
+                        for(int k=0;k<picsVehic.length();k++){
+                            String or=picsVehic.get(k).toString();
+                            String[] dividedRecInfo = or.substring(1,or.length()-1).split(",");
+                            Rectangle r= new Rectangle(dividedRecInfo[0],Math.round(Float.parseFloat(dividedRecInfo[1])),Math.round(Float.parseFloat(dividedRecInfo[2])),Math.round(Float.parseFloat(dividedRecInfo[3])),Math.round(Float.parseFloat(dividedRecInfo[4])),Float.parseFloat(dividedRecInfo[5]));
+                            recs.add(r);
+                        }
                         Collections.sort(recs);
-                       fileVehicleList.add(recs);
-                   }
+                        fileVehicleList.add(recs);
+                    }
 
                     for(int y=0;y<fileVehicleList.size();y++)
                     {
@@ -170,7 +170,7 @@ public class VehicleService extends Service  {
                     //split("\[")[1]
                     if(evaluateCrashing())
                     {
-                       mp.start();
+                        mp.start();
                     }
 
                 } catch (Exception e)
@@ -206,10 +206,10 @@ public class VehicleService extends Service  {
                     {
                         Rectangle cur =later.get(iter);
                         ArrayList<Integer> matches= possibleMatch(earlier,cur);
-                              if(matches.isEmpty()&&((cur.getArea())>400*600*FILERESOLUTIONPERCENT)||(cur.getH()>400*FILERESOLUTIONPERCENT)||(cur.getW()>400*FILERESOLUTIONPERCENT)) {
-                                  Log.d("Tagat","noticing too much speed and car getting close compared to earlier images ");
-                                  return true;
-                              }
+                        if(matches.isEmpty()&&((cur.getArea())>400*600*FILERESOLUTIONPERCENT)||(cur.getH()>400*FILERESOLUTIONPERCENT)||(cur.getW()>400*FILERESOLUTIONPERCENT)) {
+                            Log.d("Tagat","noticing too much speed and car getting close compared to earlier images ");
+                            return true;
+                        }
                     }
 
 
@@ -239,7 +239,7 @@ public class VehicleService extends Service  {
                 System.out.println("k:"+k);
                 String img =k+".jpg";
                 k++;
-               Response response= makeRequest(img);
+                Response response= makeRequest(img);
                 JSONObject json = new JSONObject(response.body().string());
                 return json;
                 //  return new JSONObject(response.body().string());
@@ -250,7 +250,7 @@ public class VehicleService extends Service  {
                 System.out.println("Other Error: " + e.getLocalizedMessage());
             }
 
-           return null;
+            return null;
         }
         private Response makeRequest(String img){
             AssetManager assetManager = getAssets();
