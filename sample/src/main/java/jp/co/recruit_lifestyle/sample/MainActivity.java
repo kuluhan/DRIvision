@@ -31,7 +31,10 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.example.simon.cameraapp.CameraPreviews;
 import com.example.simon.cameraapp.CameraService;
+import com.example.simon.cameraapp.FaceService;
 import com.example.simon.cameraapp.FrontCameraPreviews;
+import com.example.simon.cameraapp.LaneService;
+import com.example.simon.cameraapp.VehicleService;
 
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.tracking.DetectorService;
@@ -51,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
     public static boolean closeAppStopDetection;
-
+    VehicleService vehicleServer;
     FloatingViewControlFragment fragment;
     public static Runnable UIrunnable ;
     String[] ImagePath;
@@ -78,9 +81,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private boolean isChecked = false;
     boolean mBounded;
     boolean detectorBounded;
+    boolean vehicleBounded;
+    boolean laneBounded;
+    boolean faceBounded;
     public static Thread detectorServiceThread;
     FloatingViewService mServer;
     DetectorService detectorServer;
+    LaneService laneServer;
+    FaceService faceServer;
    public static Handler floatingHandler =new Handler();
     public static boolean created = false;
 
@@ -92,8 +100,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             System.out.println("DISCONNECTED");
             mBounded = false;
             detectorBounded=false;
+            vehicleBounded=false;
+            laneBounded= false;
+            faceBounded =false;
             mServer = null;
+            vehicleServer =null;
             detectorServer=null;
+            faceServer =null;
+            laneServer=null;
         }
 
         @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -105,6 +119,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 onServiceConnected1( name, (FloatingViewService.LocalBinder) service);
             else if(service.getClass().getName().equals(DetectorService.LocalBinder.class.getName()))
                 onServiceConnected2( name, (DetectorService.LocalBinder) service);
+            else if(service.getClass().getName().equals(VehicleService.LocalBinder.class.getName()))
+                onServiceConnected3( name, (VehicleService.LocalBinder) service);
+            else if(service.getClass().getName().equals(FaceService.LocalBinder.class.getName()))
+                onServiceConnected4( name, (FaceService.LocalBinder) service);
+            else if(service.getClass().getName().equals(LaneService.LocalBinder.class.getName()))
+                onServiceConnected5( name, (LaneService.LocalBinder) service);
             //Toast.makeText(DetectorActivity.this, "Service is connected", 1000).show();
             System.out.println("General service override");
         }
@@ -119,6 +139,24 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             detectorBounded = true;
             DetectorService.LocalBinder mLocalBinder =service;
             detectorServer = mLocalBinder.getServerInstance();
+        }
+        public void onServiceConnected3(ComponentName name, VehicleService.LocalBinder service) {
+            System.out.println("CONNECTED");
+            vehicleBounded = true;
+            VehicleService.LocalBinder mLocalBinder = service;
+            vehicleServer = mLocalBinder.getServerInstance();
+        }
+        public void onServiceConnected4 (ComponentName name, FaceService.LocalBinder service) {
+            System.out.println("CONNECTED");
+            faceBounded = true;
+            FaceService.LocalBinder mLocalBinder =service;
+            faceServer = mLocalBinder.getServerInstance();
+        }
+        public void onServiceConnected5 (ComponentName name, LaneService.LocalBinder service) {
+            System.out.println("CONNECTED");
+            laneBounded = true;
+            LaneService.LocalBinder mLocalBinder =service;
+            laneServer = mLocalBinder.getServerInstance();
         }
     };
 
@@ -185,8 +223,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     if(!mServer.show) {
                         mServer.showSpeedLimit();
                          Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
-                                bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-                                MainActivity.this.startService(mIntent);
+                         bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                         MainActivity.this.startService(mIntent);
                     }
                 }
                 else {
@@ -200,10 +238,24 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         e.printStackTrace();
                     }
                 }
-                if (feature2.isChecked())
-                    str2 = feature3.getTextOn().toString();
-                else
-                    str2 = feature3.getTextOff().toString();
+                if (feature2.isChecked()){
+                    Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
+                    bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                    MainActivity.this.startService(mIntent);
+                }
+                else{
+                    //kapat
+
+                }
+                if (feature3.isChecked()){
+                   /* Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
+                    bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                    MainActivity.this.startService(mIntent);*/
+                }
+                else{
+                    //kapat
+
+                }
                 //Toast.makeText(getApplicationContext(), "Switch1 -  " + str1 + " \n" + "Switch2 - " + str2,Toast.LENGTH_SHORT).show();
             }
         });
@@ -233,22 +285,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public synchronized void onResume() {
         LOGGER.d("onResume " + this);
         super.onResume();
-/*
-        if(!mBounded) {
-            Intent mIntent = new Intent(this, FloatingViewService.class);
-            bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-            mBounded = true;
-        }
-        if(!detectorBounded) {
-            Intent mIntent = new Intent(this, DetectorService.class);
-            bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-            detectorBounded = true;
-        }*/
-        /*
-        handlerThread = new HandlerThread("inference");
-        handlerThread.start();
-        handler = new Handler(handlerThread.getLooper());
-         */
     }
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
@@ -260,19 +296,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             unbindService(mConnection);
             mBounded = false;
         }
-
-        /*
-        handlerThread.quitSafely();
-        try {
-            handlerThread.join();
-            handlerThread = null;
-            handler = null;
-        } catch (final InterruptedException e) {
-            LOGGER.e(e, "Exception!");
-        }
-
-         */
-        //unbindService(mConnection);
         super.onPause();
     }
 
@@ -312,8 +335,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
                 Intent intent = new Intent(MainActivity.this, CameraService.class);
                 MainActivity.this.startService(intent);
-            /*  Intent intent2 = new Intent(MainActivity.this, DetectorService.class);
-                MainActivity.this.startService(intent2);*/
             } else {
                 requestPermission();
             }

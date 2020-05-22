@@ -1,5 +1,4 @@
 package com.example.simon.cameraapp;
-/*
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -11,20 +10,29 @@ import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import android.app.Activity;
+import android.app.Service;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import 	org.json.JSONArray;
-import com.example.app.R;
-
 import org.json.JSONObject;
 import 	android.media.MediaPlayer;
+
+import androidx.annotation.RequiresApi;
+
 import java.util.Collections;
 
+//import jp.co.recruit.floatingview.R;
+import jp.co.recruit.floatingview.R;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -32,10 +40,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.RequestBody;
 
-
-
-
-public class AndroidHttpPostGetActivity extends Activity {
+@RequiresApi(api = Build.VERSION_CODES.KITKAT)
+public class VehicleService extends Service  {
     OkHttpClient client;
     MediaType JSON;
     URL url;
@@ -46,14 +52,27 @@ public class AndroidHttpPostGetActivity extends Activity {
     String fileToRequest;
     String fileToRequest2;
     String fileName;
+    Runnable vehicleDetector;
     int k;
     final double FILERESOLUTIONPERCENT= 1.5;
     ArrayList<ArrayList<Rectangle>> toRemember;
     MediaPlayer mp;
+    public IBinder mBinder = new LocalBinder();
+    //public static boolean stopOrderCameIn;
+    // Class used for the client Binder.
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
+
+    public class LocalBinder extends Binder {
+        public VehicleService getServerInstance() {
+            return VehicleService.this;
+        }
+    }
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
         host = "192.168.1.22"; ///////////////////ip of digitalocean : 142.93.38.174
         port = 20;
         file = "/predict";
@@ -76,6 +95,27 @@ public class AndroidHttpPostGetActivity extends Activity {
                 .readTimeout(10, TimeUnit.SECONDS).build();
 
         JSON = MediaType.parse("application/json; charset=utf-8");
+        vehicleDetector = new Runnable(){
+            @Override
+            public void run() {
+                readlock.lock();
+                try {
+                    // access the resource protected by this lock
+                    camera.addCallbackBuffer(data);
+                    imageConverter.run();
+                    recentPics.add(rgbFrameBitmap);
+                    while (recentPics.size() > SIZEOFRECENTPICS)
+                        recentPics.remove(0);
+                    //  System.out.println("AddingNEWDATA" + recentPics.size());
+                    readyForNextImage2();
+                }finally {
+                    readlock.unlock();
+                }
+            }
+        };
+
+        return Service.START_NOT_STICKY;
+
     }
 
     public void makeGetRequest(View v) throws IOException,InterruptedException {
@@ -250,5 +290,3 @@ public class AndroidHttpPostGetActivity extends Activity {
         }
     }
 }
-
- */
