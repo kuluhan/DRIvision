@@ -40,14 +40,15 @@ dependencies {
     implementation project(':library')
     implementation fileTree(dir: 'libs', include: ['*.jar','*.aar'])
     implementation 'org.jcodec:jcodec:0.2.3'
-
+    implementation 'org.conscrypt:conscrypt-android:2.2.1'
+    implementation("com.squareup.okhttp3:okhttp:4.4.0")
     implementation 'org.jcodec:jcodec-android:0.2.3'
     implementation 'androidx.appcompat:appcompat:1.0.0'
     implementation 'androidx.coordinatorlayout:coordinatorlayout:1.0.0'
     implementation 'com.google.android.material:material:1.0.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    implementation("com.squareup.okhttp3:okhttp:4.4.0")
+
 
     implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
 }

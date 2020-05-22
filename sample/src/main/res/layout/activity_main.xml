@@ -14,7 +14,7 @@
         android:layout_marginLeft="100dp"
         android:layout_marginTop="120dp"
         android:text="Speed Limit Detection:"
-        android:checked="true"
+        android:checked="false"
         android:textOff="OFF"
         android:textOn="ON"/>
     <Switch
@@ -25,6 +25,7 @@
         android:layout_below="@+id/switch1"
         android:layout_alignLeft="@+id/switch1"
         android:text="Lane Tracking:"
+        android:checked="true"
         android:textOff="OFF"
         android:textOn ="ON"/>
     <Switch
