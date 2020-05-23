@@ -44,6 +44,7 @@ import jp.co.recruit_lifestyle.sample.fragment.FloatingViewControlFragment;
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
 import static android.hardware.Camera.getNumberOfCameras;
+import static com.example.simon.cameraapp.VehicleService.vehicleThread;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback{
 
@@ -220,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 String str1, str2;
                 if (feature1.isChecked()) {
                     //str1 = feature1.getTextOn().toString();
-                    if(!mServer.show) {
+                    if(!FloatingViewService.show) {
                         mServer.showSpeedLimit();
                          Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
                          bindService(mIntent, mConnection, BIND_AUTO_CREATE);
@@ -228,9 +229,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     }
                 }
                 else {
-                    if(detectorServer != null)
+                    if(DetectorService.started)
                     {
                         mServer.destroy();
+                        DetectorService.started=false;
                         // unbindService(mConnection);
                         detectorServiceThread.interrupt();
                         try {
@@ -238,21 +240,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                             detectorServiceThread = null;
                         } catch (InterruptedException e) {
                             e.printStackTrace();
+                            System.out.println("InterruptedException while Sign Detection join ");
                         }
+                        System.out.println("Sign Detection stopped");
                     }
-
                 }
                 if (feature2.isChecked()){
-                    Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
-                    bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-                    MainActivity.this.startService(mIntent);
-                }
-                else{
-                    //kapat
-
-                }
-                if (feature3.isChecked()){
-                   /* Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
+                  /* Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
                     bindService(mIntent, mConnection, BIND_AUTO_CREATE);
                     MainActivity.this.startService(mIntent);*/
                 }
@@ -260,7 +254,28 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     //kapat
 
                 }
-                //Toast.makeText(getApplicationContext(), "Switch1 -  " + str1 + " \n" + "Switch2 - " + str2,Toast.LENGTH_SHORT).show();
+                if (feature3.isChecked()){
+
+                    Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
+                    bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                    MainActivity.this.startService(mIntent);
+                }
+                else{
+                    if(VehicleService.started)
+                    {
+                        VehicleService.started=false;
+                        // unbindService(mConnection);
+                        vehicleThread.interrupt();
+                        try {
+                            vehicleThread.join();
+                            vehicleThread = null;
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                            System.out.println("InterruptedException while Vehicle Detection join ");
+                        }
+                        System.out.println("Vehicle Detection stopped");
+                    }
+                }
             }
         });
 

@@ -195,11 +195,10 @@ public class DetectorService extends Service {
                     public void run() {
 
                         if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
-
                             try {
                                 throw new InterruptedException();
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
+                               // e.printStackTrace();
                             }
                         }
                         else{

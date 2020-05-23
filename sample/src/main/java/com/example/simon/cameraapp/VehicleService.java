@@ -54,6 +54,7 @@ import static org.tensorflow.lite.examples.detection.tracking.DetectorService.re
 
 
 public class VehicleService extends Service  {
+    public static boolean started;
     static Bitmap data;
 
     public static OkHttpClient client;
@@ -94,8 +95,7 @@ public class VehicleService extends Service  {
         port = 8001;
         file = "/predict";
         protocol ="HTTP";
-
-
+        started=true;
         //initialize empty vehicleList and load alarm sound
         toRemember =new ArrayList();
         mp = MediaPlayer.create(this, R.raw.sample);
@@ -115,14 +115,14 @@ public class VehicleService extends Service  {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void run() {
-                if (closeAppStopDetection || Thread.currentThread().isInterrupted()) {
-
+                if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
                     try {
                         throw new InterruptedException();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        // e.printStackTrace();
                     }
-                } else {
+                }
+                 else {
                         readLock.lock();
                         try {
                             // access the resource protected by this lock

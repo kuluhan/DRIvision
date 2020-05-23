@@ -34,6 +34,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import com.example.simon.cameraapp.CameraService;
+import com.example.simon.cameraapp.VehicleService;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -92,6 +93,7 @@ public static boolean startCounter;
     public static boolean show;
     public static ImageView recordButton;
     public static Semaphore sem;
+    public static boolean savingVideoStarted;
    // private boolean recordStopp;
     public static SeekableByteChannel out = null;
     AndroidSequenceEncoder encoder;
@@ -120,8 +122,7 @@ public static boolean startCounter;
         }
         //Inflate the floating view layout we created
         mFloatingView = LayoutInflater.from(this).inflate(R.layout.layout_floating_view, null);
-        //sem = new Semaphore(1);
-       // recordStopp=false;
+        savingVideoStarted=false;
         out = null;
         //Add the view to the window.
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -157,21 +158,20 @@ public static boolean startCounter;
             @Override
             public void onClick(View view) {
                 //close the service and remove the from from the window
-                //TODO : close app
                 onDestroy();
             }
         });
         Runnable videosaver= new Runnable() {
             @Override
             public void run() {
-                if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
+                if(closeAppStopDetection){
                     try {
                         throw new InterruptedException();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        //e.printStackTrace();
                     }
                 }
-
+                savingVideoStarted=true;
                 File file = new File(getExternalFilesDir(null), File.separator + "driVideos");
                 if (!file.exists()) {
                     file.mkdirs();
@@ -191,14 +191,12 @@ public static boolean startCounter;
                     // for Android use: AndroidSequenceEncoder
                     encoder = new AndroidSequenceEncoder(out, Rational.R(NUMOFFRAMESINSECTOWRITE, 1));
                     int counter = 0;
-                    //int currentSize = DetectorService.recentPics.size();
                     int getter = counter;
                     ArrayList<Bitmap> copied = null;
                     ArrayList<Bitmap> newPart = new ArrayList<>();
                     // System.out.println("FirstInıt iterator"+counterForFrame+"counter:"+counter);
                     while ((VIDEOFRAMELENGHT > counter)) {
                         //  System.out.println("total frame counter: " + counterForFrame + " counter: " + counter + "  StopOrder:" + stopOrderCameIn);
-                        // sem.acquire();
                         CameraService.readLock.lock();
                         try {
                             // Generate the image, for Android use Bitmap
@@ -216,10 +214,10 @@ public static boolean startCounter;
                                 synchronized (lockk) {
                                     lockk.wait();
                                 }
+                                CameraService.readLock.lock();
                                 if(closeAppStopDetection){
                                     break;
                                 }
-                                CameraService.readLock.lock();
                                 getter = DetectorService.recentPics.size() - 1;
                                 Bitmap bitmapData = DetectorService.recentPics.get(getter);
                                 newPart.add(bitmapData.copy(bitmapData.getConfig(), false));
@@ -229,8 +227,6 @@ public static boolean startCounter;
                             if (closeAppStopDetection)
                                 break;
                         } finally {
-                            // System.out.println("total frame counter: " + counterForFrame + " counter: " + counter + "  StopOrder:" + stopOrderCameIn);
-                            // sem.release();
                             CameraService.readLock.unlock();
                         }
                     }
@@ -254,48 +250,19 @@ public static boolean startCounter;
                         System.out.println("Resim yazıldı" + l);
                     }
                     endVideoRecording();
-                    if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
+
+                    if(closeAppStopDetection){
                         try {
                             throw new InterruptedException();
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            //e.printStackTrace();
                         }
                     }
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-        }            ;
-
-//Set the view while floating view is expanded.
-//Set the play button.
-        /*
-        ImageView playButton = (ImageView) mFloatingView.findViewById(R.id.play_btn);
-        playButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(FloatingViewService.this, "Playing the song.", Toast.LENGTH_LONG).show();
-
-            }
-        });
-
-         */
-
-
-        /*
-//Set the next button.
-        ImageView nextButton = (ImageView) mFloatingView.findViewById(R.id.next_btn);
-        nextButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                destroy();
-            }
-        });
-
-  */
-
-
-
+        } ;
 //Set the close button
         ImageView closeButton = (ImageView) mFloatingView.findViewById(R.id.close_button);
         closeButton.setOnClickListener(new View.OnClickListener() {
@@ -326,14 +293,9 @@ public static boolean startCounter;
         recordButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                try {
-                    sleep(10);
-                     threadVideoSaver =new Thread(videosaver);
-                    threadVideoSaver.start();
-                    recordButton.setColorFilter(Color.DKGRAY);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                threadVideoSaver =new Thread(videosaver);
+                threadVideoSaver.start();
+                recordButton.setColorFilter(Color.DKGRAY);
             }
         });
 
@@ -351,8 +313,6 @@ public static boolean startCounter;
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-
-
                         //remember the initial position.
                         initialX = params.x;
                         initialY = params.y;
@@ -451,6 +411,7 @@ public static boolean startCounter;
             } finally {
                 NIOUtils.closeQuietly(out);
                 System.out.println("Video Saved!");
+               // savingVideoStarted=false;
                 recordButton.clearColorFilter();
             }
 
@@ -460,21 +421,41 @@ public static boolean startCounter;
     }
     @Override
     public void onDestroy() {
-        super.onDestroy();
+        if (mFloatingView != null) mWindowManager.removeView(mFloatingView);
+        mFloatingViewManager.removeAllViewToWindow();
         closeAppStopDetection=true;
         synchronized (lockk) {
             lockk.notify();
         }
-        detectorServiceThread.interrupt();
-        vehicleThread.interrupt();
-        threadVideoSaver.interrupt();
+        if(DetectorService.started)
+             detectorServiceThread.interrupt();
+        if(VehicleService.started)
+            vehicleThread.interrupt();
+        //if(FloatingViewService.savingVideoStarted)
+         //   threadVideoSaver.interrupt();
         stopSelf();
-        floatingHandler.removeCallbacks(UIrunnable);
+        if(floatingHandler!=null)
+            floatingHandler.removeCallbacks(UIrunnable);
+        if(imagesaverHandler!=null)
         imagesaverHandler.removeCallbacks(imageSaver);
         floatingHandler=null;
         imagesaverHandler=null;
-        if (mFloatingView != null) mWindowManager.removeView(mFloatingView);
-        mFloatingViewManager.removeAllViewToWindow();
+        try {
+            if(DetectorService.started)
+                if(detectorServiceThread.isAlive())
+                detectorServiceThread.join();
+            if(VehicleService.started)
+              if(vehicleThread.isAlive())
+                vehicleThread.join();
+            if(savingVideoStarted)
+                if(threadVideoSaver.isAlive())
+                 threadVideoSaver.join();
+        }catch (InterruptedException E){
+            System.out.println("App is not properly ended!");
+        }
+        super.onDestroy();
+        System.out.println("App is ended!");
+      //  System.exit(0);
     }
     @Override
     public void onFinishFloatingView() {

@@ -33,27 +33,15 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
-
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
-import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
-
-import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
-import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.sem;
-import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.startCounter;
-
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.imageConverter;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.isProcessingFrame;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewHeight;
@@ -71,9 +59,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static Handler imagesaverHandler=   (new Handler());
     public static Lock readLock = lck.readLock();
     public static ReentrantReadWriteLock lck2 =new ReentrantReadWriteLock();
-    public static Lock writeLock2 =lck2.writeLock();
-    public static Lock readLock2 = lck2.readLock();
-    String[] ImagePath;
     List picList;
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
@@ -82,20 +67,9 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static Camera mServiceCamera;
     private SurfaceView mBackSurfaceView;
     private static Camera mBackServiceCamera;
-    private boolean isPlay = false;
-    public static final String PREFS = "CAMERA_APP";
-    protected SharedPreferences prefs;
-
-    int count = 0;
-    public static boolean safeToTakePicture = false;
     public static String TAG = "DualCamActivity";
     private LinearLayout mllFirst;
-    public static CameraPreviews mCameraPreview;
-    private SurfaceTexture surfaceTexture;
     public static int counterForFrame;
-    //public static int[] rgbBytes = null;
-    //public static byte[][] yuvBytes = new byte[3][];
-    //public static int yRowStride;
     private static final int MINIMUM_PREVIEW_SIZE = 320;
     private AutoFitTextureView textureView;
     private WindowManager mWindowManager;
