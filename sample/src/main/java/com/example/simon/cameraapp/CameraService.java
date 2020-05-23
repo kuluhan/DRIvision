@@ -306,9 +306,11 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         if(getCameraInstance(1) == null)
         {
             noFrontCamera = true;
+            Log.d("MyCameraApp", "we have one cameras");
         }
         else{
             mBackServiceCamera = getCameraInstance(1);
+            Log.d("MyCameraApp", "we have two cameras");
             System.out.println("SECOND CAMERA " + mBackServiceCamera.toString());
         }
 
@@ -487,3 +489,23 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         return null;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
