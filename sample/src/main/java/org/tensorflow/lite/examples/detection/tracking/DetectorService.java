@@ -28,6 +28,7 @@ import org.tensorflow.lite.examples.detection.tflite.TFLiteObjectDetectionAPIMod
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,7 +45,9 @@ import static java.lang.Thread.sleep;
 import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.MainActivity.detectorServiceThread;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.addOtherSign;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.changeSpeedSign;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.removeOtherSign;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.show;
 import static org.tensorflow.lite.examples.detection.tracking.DetectorService.DetectorMode.TF_OD_API;
 
@@ -98,6 +101,8 @@ public class DetectorService extends Service {
     boolean mBounded;
     static FloatingViewService mServer;
     static HashSet<String> speedLabels;
+    static HashSet<String> otherSigns;
+    static HashMap<String, Integer> otherLabels;
     static String previousLabel;
     public static  boolean started = false;
     public static int flag = 3;
@@ -123,6 +128,22 @@ public class DetectorService extends Service {
         speedLabels.add("speed_limit_80");
         speedLabels.add("speed_limit_100");
         speedLabels.add("speed_limit_120");
+
+
+        otherSigns = new HashSet<>();
+        otherSigns.add("priority_road");
+        otherSigns.add("give_way");
+        otherSigns.add("stop");
+        otherSigns.add("no_entry");
+        otherSigns.add("danger");
+        otherSigns.add("go_right");
+        otherSigns.add("go_left");
+        otherSigns.add("go_straight");
+        otherSigns.add("keep_right");
+        otherSigns.add("keep_left");
+        otherSigns.add("roundabout");
+
+        otherLabels = new HashMap<>();
 
         /*
         Bundle bundle = intent.getExtras();
@@ -261,6 +282,7 @@ public class DetectorService extends Service {
                 System.out.println("RESULT ID: " + result.getTitle());
                 if (speedLabels.contains(result.getTitle()) && !result.getTitle().equals(previousLabel) && show) {
                     //mServer.changeSpeedSign(result.getTitle());
+                    System.out.println("speed sign recognized");
                     UIrunnable = new Runnable() {
                         @Override
                         public void run() {
@@ -270,6 +292,39 @@ public class DetectorService extends Service {
                     handler.post(UIrunnable);
                     previousLabel = result.getTitle();
                 }
+                else if(otherLabels.size() < 2 && !otherLabels.containsKey(result.getTitle()) && !result.getTitle().equals(previousLabel) && show){
+                    System.out.println("other sign recognized");
+                    // UPDATE UI
+                    Runnable temp1 = new Runnable() {
+                        @Override
+                        public void run() {
+                            addOtherSign(result.getTitle());
+                        }
+                    };
+                    handler.post(temp1);
+                    otherLabels.put(result.getTitle(), 100);
+                }
+            }
+        }
+        if(show) {
+            for (String sign : otherLabels.keySet()) {
+                int durationLeft = otherLabels.get(sign);
+                System.out.println(durationLeft);
+                if (durationLeft == 1) {
+                    // UPDATE UI
+                    Runnable temp2 = new Runnable() {
+                        @Override
+                        public void run() {
+                            removeOtherSign(sign);
+                        }
+                    };
+                    handler.post(temp2);
+                    //otherLabels.remove(sign);
+                }
+                otherLabels.put(sign, durationLeft - 1);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                otherLabels.entrySet().removeIf(entry -> (entry.getValue() == 0));
             }
         }
         computingDetection = false;
@@ -283,7 +338,7 @@ public class DetectorService extends Service {
     public static void readyForNextImage() {
         //System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
-            System.out.println("Ready for new image");
+            //System.out.println("Ready for new image");
             postInferenceCallback.run();
 
            // (new Handler()).postDelayed(postInferenceCallback, 100);

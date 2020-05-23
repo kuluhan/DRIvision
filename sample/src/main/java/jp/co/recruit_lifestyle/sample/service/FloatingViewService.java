@@ -38,11 +38,15 @@ import com.example.simon.cameraapp.CameraService;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.PriorityQueue;
+import java.util.Stack;
 import java.util.concurrent.Semaphore;
 
 import jp.co.recruit.floatingview.R;
+import jp.co.recruit_lifestyle.android.floatingview.FloatingView;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewListener;
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewManager;
 import jp.co.recruit_lifestyle.sample.MainActivity;
@@ -93,6 +97,9 @@ public static boolean startCounter;
     AndroidSequenceEncoder encoder;
     // Binder given to clients
     public  IBinder mBinder = new LocalBinder();
+    public static Stack<String> speedHist;
+    public static int numOtherSigns;
+    static SharedPreferences sharedPref;
     //public static boolean stopOrderCameIn;
     // Class used for the client Binder.
     @Override
@@ -427,8 +434,11 @@ public static boolean startCounter;
     }
     public void showSpeedLimit(){
         trafficSignView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
-        final FloatingViewManager.Options options = loadOptions(metrics);
-        mFloatingViewManager.addViewToWindow(trafficSignView, options);
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        numOtherSigns = 1;
+        options = loadOptions(metrics, false);
+        mFloatingViewManager.addViewToWindow(trafficSignView, options, "traffic sign");
+        speedHist = new Stack<>();
         show = true;
     }
     public void endVideoRecording() {
@@ -501,13 +511,11 @@ public static boolean startCounter;
         builder.setPriority(NotificationCompat.PRIORITY_MIN);
         builder.setCategory(NotificationCompat.CATEGORY_SERVICE);
 
-
-
         return builder.build();
     }
 
     private void loadDynamicOptions() {
-        final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 
         final String displayModeSettings = sharedPref.getString("settings_display_mode", "");
         if ("Always".equals(displayModeSettings)) {
@@ -520,9 +528,8 @@ public static boolean startCounter;
 
     }
 
-    private FloatingViewManager.Options loadOptions(DisplayMetrics metrics) {
-        final FloatingViewManager.Options options = new FloatingViewManager.Options();
-        final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+    public static FloatingViewManager.Options loadOptions(DisplayMetrics metrics, boolean flag) {
+        final FloatingViewManager.Options options = new FloatingViewManager.Options(numOtherSigns, flag);
 
         // Shape
         final String shapeSettings = sharedPref.getString("settings_shape", "Rectangle");
@@ -579,9 +586,80 @@ public static boolean startCounter;
         return options;
     }
 
+    public static void addOtherSign(String speedLimit){
+        boolean noUpdate = false;
+        ImageView newView = null;
+        switch(speedLimit) {
+            case "priority_road":
+                newView = (ImageView) inflater.inflate(R.layout.priority, null, false);
+                break;
+            case "give_way":
+                newView = (ImageView) inflater.inflate(R.layout.give_way, null, false);
+                break;
+            case "stop":
+                newView = (ImageView) inflater.inflate(R.layout.stop, null, false);
+                break;
+            case "no_entry":
+                newView = (ImageView) inflater.inflate(R.layout.no_entry, null, false);
+                break;
+            case "danger":
+                newView = (ImageView) inflater.inflate(R.layout.danger, null, false);
+                break;
+            case "go_right":
+                newView = (ImageView) inflater.inflate(R.layout.go_right, null, false);
+                break;
+            case "go_left":
+                newView = (ImageView) inflater.inflate(R.layout.go_left, null, false);
+                break;
+            case "go_straight":
+                newView = (ImageView) inflater.inflate(R.layout.go_straight, null, false);
+                break;
+            case "keep_right":
+                newView = (ImageView) inflater.inflate(R.layout.keep_right, null, false);
+                break;
+            case "keep_left":
+                newView = (ImageView) inflater.inflate(R.layout.keep_left, null, false);
+                break;
+            case "roundabout":
+                newView = (ImageView) inflater.inflate(R.layout.roundabout, null, false);
+                break;
+            default:
+                noUpdate = true;
+                //iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
+        }
+        if(!noUpdate) {
+            options = loadOptions(metrics, true);
+            numOtherSigns++;
+            //options.floatingViewX = options.floatingViewX - numOtherSigns * (10);
+            //options.overMargin = (int) (16 * metrics.density);
+            mFloatingViewManager.addViewToWindow(newView, options, speedLimit);
+        }
+    }
+
+    public static void removeOtherSign(String speedLimit){
+        if(numOtherSigns != 1)
+            numOtherSigns--;
+        mFloatingViewManager.removeOtherView(speedLimit);
+        System.out.println("REMOVE CALLED");
+    }
+
     public static void changeSpeedSign(String speedLimit){
         boolean noUpdate = false;
-        mFloatingViewManager.removeAllViewToWindow();
+        try {
+            //mFloatingViewManager.removeViewImmediate(trafficSignView);
+            //mFloatingViewManager.removeAllViewToWindow();
+            mFloatingViewManager.removeOtherView("traffic sign");
+        }
+        catch (Exception e){
+            System.out.println("VIEW IS ALREADY REMOVED");
+        }
+        if(speedLimit.equals("restriction_ends_80") && !speedHist.isEmpty() && speedHist.peek().equals("speed_limit_80")){
+            speedHist.pop();
+            speedLimit = speedHist.peek();
+        }
+        else if(!speedHist.isEmpty()){
+            speedHist.pop();
+        }
         switch(speedLimit) {
             case "speed_limit_20":
                 trafficSignView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
@@ -601,9 +679,6 @@ public static boolean startCounter;
             case "speed_limit_80":
                 trafficSignView = (ImageView) inflater.inflate(R.layout.speed_80, null, false);
                 break;
-            case "restriction_ends_80":
-                trafficSignView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
-                break;
             case "speed_limit_100":
                 trafficSignView = (ImageView) inflater.inflate(R.layout.speed_100, null, false);
                 break;
@@ -615,9 +690,15 @@ public static boolean startCounter;
                 //iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
         }
         if(!noUpdate) {
+            options = loadOptions(metrics, false);
+            /*
             options = new FloatingViewManager.Options();
             options.overMargin = (int) (16 * metrics.density);
-            mFloatingViewManager.addViewToWindow(trafficSignView, options);
+
+             */
+            mFloatingViewManager.addViewToWindow(trafficSignView, options, "traffic sign");
+            if(speedHist.isEmpty() || !speedLimit.equals(speedHist.peek()))
+                speedHist.push(speedLimit);
         }
     }
 

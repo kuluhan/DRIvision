@@ -39,6 +39,7 @@ import android.widget.FrameLayout;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class FloatingViewManager implements ScreenChangedListener, View.OnTouchListener{
 
@@ -111,6 +112,8 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
 
     private final ArrayList<FloatingView> mFloatingViewList;
 
+    private HashMap<String, FloatingView> otherViews;
+
     public FloatingViewManager(Context context, FloatingViewListener listener) {
         mContext = context;
         mResources = context.getResources();
@@ -125,6 +128,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
 
         mFloatingViewList = new ArrayList<>();
         mFullscreenObserverView = new FullscreenObserverView(context, this);
+        otherViews = new HashMap<>();
        // mTrashView = new TrashView(context);
     }
 /*
@@ -362,11 +366,13 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
         mFullscreenObserverView.onGlobalLayout();
     }
 
-    public void addViewToWindow(View view, Options options) {
+
+    public void addViewToWindow(View view, Options options, String label) {
         final boolean isFirstAttach = mFloatingViewList.isEmpty();
         // FloatingView
         final FloatingView floatingView = new FloatingView(mContext);
         floatingView.setInitCoords(options.floatingViewX, options.floatingViewY);
+        System.out.println("MARGIN: " + options.overMargin);
         floatingView.setOnTouchListener(this);
         floatingView.setShape(options.shape);
         floatingView.setOverMargin(options.overMargin);
@@ -384,10 +390,13 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
             floatingView.setVisibility(View.GONE);
         }
         mFloatingViewList.add(floatingView);
+        otherViews.put(label, floatingView);
+
         // TrashView
      //   mTrashView.setTrashViewListener(this);
 
         mWindowManager.addView(floatingView, floatingView.getWindowLayoutParams());
+
         if (isFirstAttach) {
             mWindowManager.addView(mFullscreenObserverView, mFullscreenObserverView.getWindowLayoutParams());
             mTargetFloatingView = floatingView;
@@ -402,7 +411,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
      *
      * @param floatingView FloatingView
      */
-    private void removeViewToWindow(FloatingView floatingView) {
+    public void removeViewToWindow(FloatingView floatingView) {
         final int matchIndex = mFloatingViewList.indexOf(floatingView);
         if (matchIndex != -1) {
             removeViewImmediate(floatingView);
@@ -414,6 +423,12 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
                 mFloatingViewListener.onFinishFloatingView();
             }
         }
+    }
+
+    public void removeOtherView(String label){
+        final FloatingView floatingView = otherViews.get(label);
+        removeViewImmediate(floatingView);
+        otherViews.remove(label);
     }
 
     /**
@@ -435,9 +450,10 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
      *
      * @param view {@link View}
      */
-    private void removeViewImmediate(View view) {
+    public void removeViewImmediate(View view) {
         try {
             mWindowManager.removeViewImmediate(view);
+            System.out.println("REMOVE SUCCESSFUL");
         } catch (IllegalArgumentException e) {
             //do nothing
         }
@@ -502,9 +518,12 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
 
         public boolean animateInitialMove;
 
-        public Options() {
+        public Options(int numOtherSigns, boolean flag) {
             shape = SHAPE_CIRCLE;
-            overMargin = 0;
+            if(flag)
+                overMargin = -30 - (300 * numOtherSigns);
+            else
+                overMargin = -30;
             floatingViewX = FloatingView.DEFAULT_X;
             floatingViewY = FloatingView.DEFAULT_Y;
             floatingViewWidth = FloatingView.DEFAULT_WIDTH;
@@ -513,7 +532,5 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
             usePhysics = true;
             animateInitialMove = true;
         }
-
     }
-
 }

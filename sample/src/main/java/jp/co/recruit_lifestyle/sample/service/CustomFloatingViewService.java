@@ -67,7 +67,7 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
         loadDynamicOptions();
         // Initial Setting Options (you can't change options after created.)
         final FloatingViewManager.Options options = loadOptions(metrics);
-        mFloatingViewManager.addViewToWindow(iconView, options);
+        mFloatingViewManager.addViewToWindow(iconView, options, "traffic sign");
 
         startForeground(NOTIFICATION_ID, createNotification(this));
 
@@ -143,7 +143,7 @@ public class CustomFloatingViewService extends Service implements FloatingViewLi
     }
 
     private FloatingViewManager.Options loadOptions(DisplayMetrics metrics) {
-        final FloatingViewManager.Options options = new FloatingViewManager.Options();
+        final FloatingViewManager.Options options = new FloatingViewManager.Options(1, false);
         final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 
         // Shape

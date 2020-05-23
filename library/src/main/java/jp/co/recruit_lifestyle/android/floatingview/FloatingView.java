@@ -59,7 +59,7 @@ import java.lang.ref.WeakReference;
 /**
  * http://stackoverflow.com/questions/18503050/how-to-create-draggabble-system-alert-in-android
  */
-class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawListener {
+public class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawListener {
 
     private static final float SCALE_PRESSED = 0.9f;
 
@@ -174,7 +174,7 @@ class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawList
     private float mScreenTouchY;
     private float mLocalTouchX;
     private float mLocalTouchY;
-    private int mInitX;
+    public int mInitX;
     private int mInitY;
 
     /**
@@ -390,9 +390,11 @@ class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawList
 
     @Override
     public boolean onPreDraw() {
+        System.out.println("CALLED AGAIN");
         getViewTreeObserver().removeOnPreDrawListener(this);
         if (mInitX == DEFAULT_X) {
-            mInitX = 0;
+            System.out.println("CALLED AGAIN 2");
+            mInitX = mMetrics.widthPixels - getMeasuredWidth();
         }
         if (mInitY == DEFAULT_Y) {
             mInitY = mMetrics.heightPixels - mStatusBarHeight - getMeasuredHeight();
@@ -583,7 +585,7 @@ class FloatingView extends FrameLayout implements ViewTreeObserver.OnPreDrawList
         final int newScreenHeight = mMetrics.heightPixels;
 
         mMoveLimitRect.set(-width, -height * 2, newScreenWidth + width + mNavigationBarHorizontalOffset, newScreenHeight + height + mNavigationBarVerticalOffset);
-        mPositionLimitRect.set(-mOverMargin, 0, newScreenWidth - width + mOverMargin + mNavigationBarHorizontalOffset, newScreenHeight - mStatusBarHeight - height + mNavigationBarVerticalOffset);
+        mPositionLimitRect.set(-mOverMargin, 0, newScreenWidth - width +  mOverMargin + mNavigationBarHorizontalOffset, newScreenHeight - mStatusBarHeight - height  - 80 + mNavigationBarVerticalOffset);
 
         // Initial animation stop when the device rotates
         final int newRotation = mWindowManager.getDefaultDisplay().getRotation();
