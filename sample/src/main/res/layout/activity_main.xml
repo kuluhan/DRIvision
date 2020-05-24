@@ -142,7 +142,15 @@
         </LinearLayout>
 
         <Button
-            android:id="@+id/getBtn"
+        android:id="@+id/getBtn"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="60dp"
+        android:background="@drawable/check"
+        style="?android:attr/borderlessButtonStyle" />
+        <Button
+            android:id="@+id/calibrate"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_gravity="center_horizontal"

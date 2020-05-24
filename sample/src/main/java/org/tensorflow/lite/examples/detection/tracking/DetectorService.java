@@ -177,7 +177,7 @@ public class DetectorService extends Service {
        // rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
         croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Bitmap.Config.ARGB_8888);
 
-        sensorOrientation = 90 - getScreenOrientation();
+        sensorOrientation = 0;
 
         frameToCropTransform =
                 ImageUtils.getTransformationMatrix(

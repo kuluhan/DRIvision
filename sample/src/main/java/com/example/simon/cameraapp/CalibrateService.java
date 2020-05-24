@@ -7,6 +7,7 @@ import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Environment;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.util.Log;
@@ -17,12 +18,17 @@ import androidx.annotation.RequiresApi;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import jp.co.recruit.floatingview.R;
@@ -36,6 +42,7 @@ import okhttp3.Response;
 import static com.example.simon.cameraapp.CameraService.readLock;
 import static com.example.simon.cameraapp.CameraService.rgbFrameBitmap;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
+import static org.tensorflow.lite.examples.detection.tracking.DetectorService.recentPics;
 
 public class CalibrateService extends Service {
     public CalibrateService() {
@@ -129,7 +136,9 @@ public class CalibrateService extends Service {
                         // Bitmap bmp = (recentPics).get(recentPics.size() - 1);
                         // data = bmp.copy(bmp.getConfig(), false);
                         // NEW VERSION
-                        data = rgbFrameBitmap.copy(rgbFrameBitmap.getConfig(), false); // TODO CHANGE WHEN 2 CAMERA SUPPORT ADDED
+                        Bitmap bmp = (recentPics).get(recentPics.size() - 1);
+                        data = bmp.copy(bmp.getConfig(), false);
+                        //data = rgbFrameBitmap.copy(rgbFrameBitmap.getConfig(), false); // TODO CHANGE WHEN 2 CAMERA SUPPORT ADDED
                     } finally {
                         readLock.unlock();
                     }
@@ -153,6 +162,23 @@ public class CalibrateService extends Service {
         faceThread.start();
     }
 
+    private static File getOutputMediaFile(int count) {
+        File mediaStorageDir = new File(Environment.getExternalStorageDirectory(), "MyCameraApp");
+        if(!mediaStorageDir.exists())
+        {
+            if(mediaStorageDir.mkdir()) {
+                File mediaFile = new File(mediaStorageDir.getPath() + File.separator + "IMG_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+count + ".jpg");
+                Log.d("Image Path", "Path is : " + mediaFile.getAbsolutePath());
+                return mediaFile;
+            }
+            Log.d("MyCameraApp", "failed to create directory");
+            return null;
+        }
+        File mediaFile = new File(mediaStorageDir.getPath() + File.separator + "IMG_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+count + ".jpg");
+        Log.d("Image Path", "Path is : " + mediaFile.getAbsolutePath());
+        return mediaFile;
+
+    }
 
 
     public void makeGetRequest() throws IOException, InterruptedException {
@@ -179,9 +205,13 @@ public class CalibrateService extends Service {
         protected void onPostExecute(JSONObject getResponse) {
             if (getResponse != null) {
                 try {
-                    gazeAngle = Double.parseDouble(getResponse.get("gaze_angle").toString());
-                    headPose = Double.parseDouble(getResponse.get("pose").toString());
-                    boolean isConfident = getResponse.get("is_confident").toString().equals("true") ? true : false;
+                    String gazeString = getResponse.get("gaze_angle").toString();
+                    String headString = getResponse.get("pose").toString();
+                    String confidentString = getResponse.get("is_confident").toString();
+                    gazeAngle = Double.parseDouble(gazeString);
+                    headPose = Double.parseDouble(headString);
+                    boolean isConfident = confidentString.equals("true") ? true : false;
+                    System.out.println("gaze: " + gazeAngle + " headPose: " + headPose + " isConfident: " + isConfident);
                     if(!isConfident){
                         Toast.makeText(
                                 CalibrateService.this,
@@ -232,7 +262,7 @@ public class CalibrateService extends Service {
 
             MediaType mediaType = MediaType.parse("multipart/form-data; boundary=--------------------------205063402178265581033669");
             RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
-                    .addFormDataPart("fileToRequest", "fileName",
+                    .addFormDataPart("fileToRequest", "fileName.jpg",
                             RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
                     .build();
             Request request = new Request.Builder()

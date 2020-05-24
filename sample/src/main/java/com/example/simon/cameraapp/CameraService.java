@@ -2,9 +2,12 @@ package com.example.simon.cameraapp;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -16,6 +19,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
@@ -62,7 +66,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     List picList;
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
-    private static Bitmap rgbFrameBitmap = null;
+    public static Bitmap rgbFrameBitmap = null;
     //public TextureView mSurfaceView;
     public static Camera mServiceCamera;
     private SurfaceView mBackSurfaceView;
@@ -78,6 +82,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static Runnable imageSaver;
     public static final Object lockk = new Object();
     public static final int SIZEOFRECENTPICS=100;
+    private static Matrix frameToCropTransform;
    // public static  final MonitorObject myMonitorObject =new MonitorObject();
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
@@ -131,11 +136,39 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                         ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
                         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
                         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
+                        int sensorOrientation = 90 - getScreenOrientation();
+                        frameToCropTransform  =
+                                ImageUtils.getTransformationMatrix(
+                                        previewWidth, previewHeight,
+                                        previewWidth, previewHeight,
+                                        sensorOrientation, false);
+                        Bitmap newBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
+                        final Canvas canvas = new Canvas(newBitmap);
+                        canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+                        rgbFrameBitmap = newBitmap.copy(newBitmap.getConfig(),false);
                     }
                 };
 
         readyForNextImage2();
 
+    }
+
+    protected int getScreenOrientation() {
+
+        WindowManager windowService = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        int currentRatation = windowService.getDefaultDisplay().getRotation();
+
+        if (Surface.ROTATION_0 == currentRatation) {
+            currentRatation = 0;
+        } else if(Surface.ROTATION_180 == currentRatation) {
+            currentRatation = 280;
+        } else if(Surface.ROTATION_90 == currentRatation) {
+            currentRatation = 90;
+        } else if(Surface.ROTATION_270 == currentRatation) {
+            currentRatation = 270;
+        }
+
+        return currentRatation;
     }
     public static void readyForNextImage2() {
         if( (imageSaver != null) ){
@@ -373,8 +406,8 @@ public class CameraService extends Service implements Camera.PreviewCallback {
             this.mBackServiceCamera.release();
             this.mBackServiceCamera = null;
             this.mBackServiceCamera = getCameraInstance(1);
-            this.mBackSurfaceView = new FrontCameraPreviews(this, this.mBackServiceCamera);
-            this.mBackSurfaceView.refreshDrawableState();
+           // this.mBackSurfaceView = new FrontCameraPreviews(this, this.mBackServiceCamera);
+            //this.mBackSurfaceView.refreshDrawableState();
         }
 
     }

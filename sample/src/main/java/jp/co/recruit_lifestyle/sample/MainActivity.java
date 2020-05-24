@@ -29,6 +29,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.example.simon.cameraapp.CalibrateService;
 import com.example.simon.cameraapp.CameraPreviews;
 import com.example.simon.cameraapp.CameraService;
 import com.example.simon.cameraapp.FaceService;
@@ -81,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private HandlerThread handlerThread;
     private boolean isChecked = false;
     boolean mBounded;
+    boolean calibrateBounded;
     boolean detectorBounded;
     boolean vehicleBounded;
     boolean laneBounded;
@@ -90,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     DetectorService detectorServer;
     LaneService laneServer;
     FaceService faceServer;
+    CalibrateService calibrateServer;
    public static Handler floatingHandler =new Handler();
     public static boolean created = false;
 
@@ -109,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             detectorServer=null;
             faceServer =null;
             laneServer=null;
+            calibrateServer=null;
         }
 
         @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -126,6 +130,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 onServiceConnected4( name, (FaceService.LocalBinder) service);
             else if(service.getClass().getName().equals(LaneService.LocalBinder.class.getName()))
                 onServiceConnected5( name, (LaneService.LocalBinder) service);
+            else if(service.getClass().getName().equals(CalibrateService.LocalBinder.class.getName()))
+                onServiceConnected6( name, (CalibrateService.LocalBinder) service);
             //Toast.makeText(DetectorActivity.this, "Service is connected", 1000).show();
             System.out.println("General service override");
         }
@@ -158,6 +164,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             laneBounded = true;
             LaneService.LocalBinder mLocalBinder =service;
             laneServer = mLocalBinder.getServerInstance();
+        }
+        public void onServiceConnected6(ComponentName name, CalibrateService.LocalBinder service) {
+            System.out.println("CONNECTED");
+            calibrateBounded = true;
+            CalibrateService.LocalBinder mLocalBinder = service;
+            calibrateServer = mLocalBinder.getServerInstance();
         }
     };
 
@@ -209,6 +221,21 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             bindService(mIntent, mConnection, BIND_AUTO_CREATE);
             detectorBounded = true;
         }*/
+
+        Button calibrate = (Button)findViewById(R.id.calibrate);
+        calibrate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(calibrateBounded){
+                    Toast.makeText(
+                            MainActivity.this,
+                            "please look forward, your picture will be taken in 3 seconds.",
+                            Toast.LENGTH_LONG)
+                            .show();
+                    calibrateServer.calibrate();
+                }
+            }
+        });
 
         Switch feature1 = (Switch)findViewById(R.id.switch1);
         Switch feature2  = (Switch) findViewById(R.id.switch2);
@@ -285,6 +312,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Intent intent = new Intent(MainActivity.this, CameraService.class);
             bindService(intent, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent);
+
+            Intent intent2 = new Intent(MainActivity.this, CalibrateService.class);
+            bindService(intent2, mConnection, BIND_AUTO_CREATE);
+            MainActivity.this.startService(intent2);
+
         } else {
             requestPermission();
         }
