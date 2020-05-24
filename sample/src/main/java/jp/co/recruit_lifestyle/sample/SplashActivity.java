@@ -89,6 +89,31 @@ public class SplashActivity extends AppCompatActivity {
         checkPermissions.start();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Thread continueApp = new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                try {
+                   TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    Intent redirect = new Intent(SplashActivity.this, MainActivity.class);
+                    startActivity(redirect);
+                }
+            }
+        };
+        continueApp.start();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

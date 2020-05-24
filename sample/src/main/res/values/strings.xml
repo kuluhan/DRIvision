@@ -23,7 +23,8 @@
     <string name="switch_3" tools:ignore="MissingTranslation">Collision Warning</string>
     <string name="switch_1" tools:ignore="MissingTranslation">Traffic Sign Detection</string>
     <string name="switch_2" tools:ignore="MissingTranslation">Lane Detection</string>
-    <string name="apply" tools:ignore="MissingTranslation"><u>Apply</u></string>
+    <string name="apply" tools:ignore="MissingTranslation">Apply</string>
+    <string name="calibrate" tools:ignore="MissingTranslation">Calibrate</string>
     <string name="default_floatingview_channel_id" tools:ignore="MissingTranslation">default_floatingview_channel</string>
     <string name="default_floatingview_channel_name" tools:ignore="MissingTranslation">Default Channel</string>
 </resources>
