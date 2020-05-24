@@ -306,9 +306,10 @@ public class DetectorService extends Service {
             }
         }
         if(show) {
+          //  System.out.println("Sign Detecor thread id:"+Thread.currentThread().getId()+" "+ Thread.currentThread().getName());
             for (String sign : otherLabels.keySet()) {
                 int durationLeft = otherLabels.get(sign);
-                System.out.println(durationLeft);
+               // System.out.println(durationLeft);
                 if (durationLeft == 1) {
                     // UPDATE UI
                     Runnable temp2 = new Runnable() {

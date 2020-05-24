@@ -280,6 +280,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         });
 
         if (hasPermission()) {
+            System.out.println("Main Activitythread id:"+Thread.currentThread().getId()+" "+ Thread.currentThread().getName());
             System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
             Intent intent = new Intent(MainActivity.this, CameraService.class);
             bindService(intent, mConnection, BIND_AUTO_CREATE);
@@ -325,7 +326,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             unbindService(mConnection);
             mBounded = false;
         }
-
         super.onStop();
     }
 

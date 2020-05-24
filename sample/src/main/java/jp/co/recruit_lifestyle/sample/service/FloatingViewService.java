@@ -447,6 +447,7 @@ public static boolean startCounter;
             if(VehicleService.started)
               if(vehicleThread.isAlive())
                 vehicleThread.join();
+
             if(savingVideoStarted)
                 if(threadVideoSaver.isAlive())
                  threadVideoSaver.join();
