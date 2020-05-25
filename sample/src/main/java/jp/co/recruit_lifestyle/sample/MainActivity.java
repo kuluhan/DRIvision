@@ -16,7 +16,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
-import android.util.Size;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.WindowManager;
@@ -35,6 +34,7 @@ import com.example.simon.cameraapp.CameraPreviews;
 import com.example.simon.cameraapp.CameraService;
 import com.example.simon.cameraapp.FaceService;
 import com.example.simon.cameraapp.FrontCameraPreviews;
+import com.example.simon.cameraapp.FrontCameraService;
 import com.example.simon.cameraapp.LaneService;
 import com.example.simon.cameraapp.VehicleService;
 
@@ -88,12 +88,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     boolean vehicleBounded;
     boolean laneBounded;
     boolean faceBounded;
+    boolean frontCameraBounded;
+    boolean cameraBounded;
     public static Thread detectorServiceThread;
     FloatingViewService mServer;
     DetectorService detectorServer;
     LaneService laneServer;
     FaceService faceServer;
     CalibrateService calibrateServer;
+    CameraService cameraServer;
+    FrontCameraService frontCameraServer;
    public static Handler floatingHandler =new Handler();
     public static boolean created = false;
 
@@ -109,6 +113,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             laneBounded= false;
             faceBounded =false;
             mServer = null;
+            frontCameraServer = null;
+            cameraServer = null;
+            frontCameraBounded = false;
+            cameraBounded = false;
             vehicleServer =null;
             detectorServer=null;
             faceServer =null;
@@ -131,8 +139,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 onServiceConnected4( name, (FaceService.LocalBinder) service);
             else if(service.getClass().getName().equals(LaneService.LocalBinder.class.getName()))
                 onServiceConnected5( name, (LaneService.LocalBinder) service);
+            else if(service.getClass().getName().equals(FrontCameraService.LocalBinder.class.getName()))
+                onServiceConnected6( name, (FrontCameraService.LocalBinder) service);
+            else if(service.getClass().getName().equals(CameraService.LocalBinder.class.getName()))
+                onServiceConnected7( name, (CameraService.LocalBinder) service);
             else if(service.getClass().getName().equals(CalibrateService.LocalBinder.class.getName()))
-                onServiceConnected6( name, (CalibrateService.LocalBinder) service);
+                onServiceConnected8( name, (CalibrateService.LocalBinder) service);
             //Toast.makeText(DetectorActivity.this, "Service is connected", 1000).show();
             System.out.println("General service override");
         }
@@ -166,7 +178,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             LaneService.LocalBinder mLocalBinder =service;
             laneServer = mLocalBinder.getServerInstance();
         }
-        public void onServiceConnected6(ComponentName name, CalibrateService.LocalBinder service) {
+        public void onServiceConnected6(ComponentName name, FrontCameraService.LocalBinder service) {
+            System.out.println(" FRONT CAMERA CONNECTED");
+            frontCameraBounded = true;
+            FrontCameraService.LocalBinder mLocalBinder = service;
+            frontCameraServer = mLocalBinder.getServerInstance();
+        }
+
+        public void onServiceConnected7(ComponentName name, CameraService.LocalBinder service) {
+            System.out.println(" CAMERA CONNECTED");
+            cameraBounded = true;
+            CameraService.LocalBinder mLocalBinder = service;
+            cameraServer = mLocalBinder.getServerInstance();
+        }
+        public void onServiceConnected8(ComponentName name, CalibrateService.LocalBinder service) {
             System.out.println("CONNECTED");
             calibrateBounded = true;
             CalibrateService.LocalBinder mLocalBinder = service;
@@ -320,9 +345,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             bindService(intent, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent);
 
-            Intent intent2 = new Intent(MainActivity.this, CalibrateService.class);
+            Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
             bindService(intent2, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent2);
+
+            Intent intent3 = new Intent(MainActivity.this, CalibrateService.class);
+            bindService(intent3, mConnection, BIND_AUTO_CREATE);
+            MainActivity.this.startService(intent3);
 
         } else {
             requestPermission();
@@ -392,7 +421,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             if (allPermissionsGranted(grantResults)) {
                 System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
                 Intent intent = new Intent(MainActivity.this, CameraService.class);
+                bindService(intent, mConnection, BIND_AUTO_CREATE);
                 MainActivity.this.startService(intent);
+
+                Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
+                bindService(intent2, mConnection, BIND_AUTO_CREATE);
+                MainActivity.this.startService(intent2);
             } else {
                 requestPermission();
             }

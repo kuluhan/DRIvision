@@ -11,6 +11,7 @@ import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
@@ -85,6 +86,20 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     private static Matrix frameToCropTransform;
    // public static  final MonitorObject myMonitorObject =new MonitorObject();
 
+
+    public  IBinder mBinder = new LocalBinder();
+    //public static boolean stopOrderCameIn;
+    // Class used for the client Binder.
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
+
+    public class LocalBinder extends Binder {
+        public CameraService getServerInstance() {
+            return CameraService.this;
+        }
+    }
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
 
@@ -429,12 +444,5 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         Log.d("Image Path", "Path is : " + mediaFile.getAbsolutePath());
         return mediaFile;
 
-    }
-
-
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
     }
 }
