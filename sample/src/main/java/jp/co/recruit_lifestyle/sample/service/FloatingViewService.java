@@ -100,8 +100,9 @@ public static boolean startCounter;
     // Binder given to clients
     public  IBinder mBinder = new LocalBinder();
     public static Stack<String> speedHist;
-    public static int numOtherSigns;
+    public static int positionToView;
     static SharedPreferences sharedPref;
+    public static String[] positionsOccupied = new String[2];
     //public static boolean stopOrderCameIn;
     // Class used for the client Binder.
     @Override
@@ -354,6 +355,11 @@ public static boolean startCounter;
             }
         });
 
+        positionsOccupied = new String[2];
+        for(int i = 0; i < 2; i++){
+            positionsOccupied[0] = "";
+        }
+
         startForeground(NOTIFICATION_ID, createNotification(this));
         return START_REDELIVER_INTENT;
     }
@@ -395,11 +401,15 @@ public static boolean startCounter;
     public void showSpeedLimit(){
         trafficSignView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        numOtherSigns = 1;
+        positionToView = 1;
         options = loadOptions(metrics, false);
         mFloatingViewManager.addViewToWindow(trafficSignView, options, "traffic sign");
         speedHist = new Stack<>();
         show = true;
+        positionsOccupied = new String[2];
+        for(int i = 0; i < 2; i++){
+            positionsOccupied[0] = "";
+        }
     }
     public void endVideoRecording() {
          // Finalize the encoding, i.e. clear the buffers, write the header, etc.
@@ -511,7 +521,7 @@ public static boolean startCounter;
     }
 
     public static FloatingViewManager.Options loadOptions(DisplayMetrics metrics, boolean flag) {
-        final FloatingViewManager.Options options = new FloatingViewManager.Options(numOtherSigns, flag);
+        final FloatingViewManager.Options options = new FloatingViewManager.Options(positionToView, flag);
 
         // Shape
         final String shapeSettings = sharedPref.getString("settings_shape", "Rectangle");
@@ -610,8 +620,14 @@ public static boolean startCounter;
                 //iconView = (ImageView) inflater.inflate(R.layout.widget_chathead, null, false);
         }
         if(!noUpdate) {
+            for(int i = 0; i < 2; i++){
+                if(positionsOccupied[i] == null || positionsOccupied[i].equals("")){
+                    positionsOccupied[i] = speedLimit;
+                    positionToView = i + 1;
+                    break;
+                }
+            }
             options = loadOptions(metrics, true);
-            numOtherSigns++;
             //options.floatingViewX = options.floatingViewX - numOtherSigns * (10);
             //options.overMargin = (int) (16 * metrics.density);
             mFloatingViewManager.addViewToWindow(newView, options, speedLimit);
@@ -619,8 +635,17 @@ public static boolean startCounter;
     }
 
     public static void removeOtherSign(String speedLimit){
-        if(numOtherSigns != 1)
-            numOtherSigns--;
+        /*
+        if(positionToView != 1)
+            positionToView--;
+
+         */
+        for(int i = 0; i < 2; i++){
+            if(positionsOccupied[i] != null && positionsOccupied[i].equals(speedLimit)) {
+                positionsOccupied[i] = "";
+                break;
+            }
+        }
         mFloatingViewManager.removeOtherView(speedLimit);
         System.out.println("REMOVE CALLED");
     }
