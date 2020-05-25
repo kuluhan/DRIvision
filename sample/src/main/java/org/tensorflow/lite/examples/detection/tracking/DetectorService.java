@@ -236,7 +236,7 @@ public class DetectorService extends Service {
         if (Surface.ROTATION_0 == currentRatation) {
             currentRatation = 0;
         } else if(Surface.ROTATION_180 == currentRatation) {
-            currentRatation = 280;
+            currentRatation = 180;
         } else if(Surface.ROTATION_90 == currentRatation) {
             currentRatation = 90;
         } else if(Surface.ROTATION_270 == currentRatation) {

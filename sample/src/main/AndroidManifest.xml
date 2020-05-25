@@ -31,6 +31,14 @@
             android:enabled="true"
             android:exported="true"></service>
         <service
+            android:name="com.example.simon.cameraapp.FaceService"
+            android:enabled="true"
+            android:exported="true"></service>
+        <service
+            android:name="com.example.simon.cameraapp.LaneService"
+            android:enabled="true"
+            android:exported="true"></service>
+        <service
             android:name="org.tensorflow.lite.examples.detection.tracking.DetectorService"
             android:enabled="true"
             android:exported="true"

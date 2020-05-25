@@ -208,14 +208,21 @@ public class CalibrateService extends Service {
                     String gazeString = getResponse.get("gaze_angle").toString();
                     String headString = getResponse.get("pose").toString();
                     String confidentString = getResponse.get("is_confident").toString();
-                    gazeAngle = Double.parseDouble(gazeString);
-                    headPose = Double.parseDouble(headString);
                     boolean isConfident = confidentString.equals("true") ? true : false;
                     System.out.println("gaze: " + gazeAngle + " headPose: " + headPose + " isConfident: " + isConfident);
                     if(!isConfident){
                         Toast.makeText(
                                 CalibrateService.this,
                                 "Calibration Failed, Please Try Again.",
+                                Toast.LENGTH_LONG)
+                                .show();
+                    }
+                    else{
+                        gazeAngle = Double.parseDouble(gazeString);
+                        headPose = Double.parseDouble(headString);
+                        Toast.makeText(
+                                CalibrateService.this,
+                                "Calibration Successful, Please Try Again.",
                                 Toast.LENGTH_LONG)
                                 .show();
                     }

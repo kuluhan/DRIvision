@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.util.Size;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.WindowManager;
@@ -276,10 +277,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                   /* Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
                     bindService(mIntent, mConnection, BIND_AUTO_CREATE);
                     MainActivity.this.startService(mIntent);*/
+                    System.out.println("FACESERVICE STARTED");
+                    Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+                    //bindService(mIntent7, mConnection, BIND_AUTO_CREATE);
+                    MainActivity.this.startService(mIntent);
                 }
                 else{
                     //kapat
-
+                    Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+                    //bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                    MainActivity.this.stopService(mIntent);
                 }
                 if (feature3.isChecked()){
 

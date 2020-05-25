@@ -84,6 +84,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static final int SIZEOFRECENTPICS=100;
     private static Matrix frameToCropTransform;
    // public static  final MonitorObject myMonitorObject =new MonitorObject();
+
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
 
@@ -161,7 +162,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
         if (Surface.ROTATION_0 == currentRatation) {
             currentRatation = 0;
         } else if(Surface.ROTATION_180 == currentRatation) {
-            currentRatation = 280;
+            currentRatation = 180;
         } else if(Surface.ROTATION_90 == currentRatation) {
             currentRatation = 90;
         } else if(Surface.ROTATION_270 == currentRatation) {
