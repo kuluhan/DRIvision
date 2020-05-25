@@ -2,9 +2,12 @@ package com.example.simon.cameraapp;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -14,9 +17,11 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
@@ -53,7 +58,7 @@ import static org.tensorflow.lite.examples.detection.tracking.DetectorService.im
 public class FrontCameraService extends Service implements Camera.PreviewCallback {
     public static ReentrantReadWriteLock lck =new ReentrantReadWriteLock();
     public static Lock writeLock =lck.writeLock();
-    public static CopyOnWriteArrayList<byte[]> recentPics;
+    public static CopyOnWriteArrayList<Bitmap> recentPics;
     public static int previewWidth = 0;
     public static int previewHeight = 0;
     public static Runnable imageConverter;
@@ -72,7 +77,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
     List picList;
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
-    private static Bitmap rgbFrameBitmap = null;
+    public static Bitmap rgbFrameBitmap = null;
     //public TextureView mSurfaceView;
     public static Camera mServiceCamera;
     private SurfaceView mBackSurfaceView;
@@ -93,6 +98,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
     public static Runnable imageSaver;
     public static final Object lockk = new Object();
     public static final int SIZEOFRECENTPICS=100;
+    private static Matrix frameToCropTransform;
 
     // public static  final MonitorObject myMonitorObject =new MonitorObject();
     public  IBinder mBinder = new LocalBinder();
@@ -142,7 +148,8 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
                 try {
                     // access the resource protected by this lock
                     camera.addCallbackBuffer(data);
-                    recentPics.add(data);
+                    imageConverter.run();
+                    recentPics.add(rgbFrameBitmap);
                     while (recentPics.size() > SIZEOFRECENTPICS)
                         recentPics.remove(0);
                     readyForNextImage2();
@@ -152,6 +159,28 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
 
             }
         };
+
+        imageConverter =
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        yuvBytes[0] = data;
+                        ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
+                        rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
+                        rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
+                        int sensorOrientation = 90 - getScreenOrientation();
+                        frameToCropTransform  =
+                                ImageUtils.getTransformationMatrix(
+                                        previewWidth, previewHeight,
+                                        previewWidth, previewHeight,
+                                        sensorOrientation, false);
+                        Bitmap newBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
+                        final Canvas canvas = new Canvas(newBitmap);
+                        canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+                        rgbFrameBitmap = newBitmap.copy(newBitmap.getConfig(),false);
+                    }
+                };
+
 
         readyForNextImage2();
     }
@@ -167,6 +196,23 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
 
     }
 
+    protected int getScreenOrientation() {
+
+        WindowManager windowService = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        int currentRatation = windowService.getDefaultDisplay().getRotation();
+
+        if (Surface.ROTATION_0 == currentRatation) {
+            currentRatation = 0;
+        } else if(Surface.ROTATION_180 == currentRatation) {
+            currentRatation = 180;
+        } else if(Surface.ROTATION_90 == currentRatation) {
+            currentRatation = 90;
+        } else if(Surface.ROTATION_270 == currentRatation) {
+            currentRatation = 270;
+        }
+
+        return currentRatation;
+    }
 
     private final TextureView.SurfaceTextureListener backSurfaceTextureListener =
             new TextureView.SurfaceTextureListener() {
@@ -279,7 +325,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
 
     @Override
     public void onCreate() {
-        recentPics= new CopyOnWriteArrayList<byte[]>();
+        recentPics=  new CopyOnWriteArrayList<Bitmap>();
         tex2 = LayoutInflater.from(this).inflate(R.layout.texture2, null);
         textureView2 =  tex2.findViewById(R.id.texture2);
         textureView2.setSurfaceTextureListener(backSurfaceTextureListener);
