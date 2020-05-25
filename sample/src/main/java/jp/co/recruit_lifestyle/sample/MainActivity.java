@@ -278,6 +278,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         mServer.showSpeedLimit();
                          Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
                          bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+
                          MainActivity.this.startService(mIntent);
                     }
                 }
