@@ -107,8 +107,8 @@ public class VehicleService extends Service  {
         }
 
         client = new OkHttpClient().newBuilder().connectTimeout(0, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS).build();
+                .writeTimeout(100, TimeUnit.SECONDS)
+                .readTimeout(100, TimeUnit.SECONDS).build();
 
         JSON = MediaType.parse("application/json; charset=utf-8");
         vehicleDetector = new Runnable(){

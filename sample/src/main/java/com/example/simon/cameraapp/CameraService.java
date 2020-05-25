@@ -120,11 +120,11 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                     recentPics.add(rgbFrameBitmap);
                     while (recentPics.size() > SIZEOFRECENTPICS)
                         recentPics.remove(0);
-                    //  System.out.println("AddingNEWDATA" + recentPics.size());
-                    readyForNextImage2();
+                     System.out.println("AddingNEWDATA" + recentPics.size());
                 }finally {
                     writeLock.unlock();
                 }
+                readyForNextImage2();
             }
         };
         imageConverter =
@@ -173,10 +173,10 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static void readyForNextImage2() {
         if( (imageSaver != null) ){
             synchronized (lockk) {
-                lockk.notify(); // Will wake up lock.wait()
+                lockk.notifyAll(); // Will wake up lock.wait()
             }
             imagesaverHandler = new Handler();
-            imagesaverHandler.postDelayed(imageSaver, 100);
+            imagesaverHandler.postDelayed(imageSaver, 1000);
         }
 
     }

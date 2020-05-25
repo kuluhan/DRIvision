@@ -619,10 +619,10 @@ public static boolean startCounter;
     }
 
     public static void removeOtherSign(String speedLimit){
-        if(numOtherSigns != 1)
+        if(numOtherSigns > 1)
             numOtherSigns--;
         mFloatingViewManager.removeOtherView(speedLimit);
-        System.out.println("REMOVE CALLED");
+        System.out.println("REMOVE CALLED other sign");
     }
 
     public static void changeSpeedSign(String speedLimit){
@@ -635,7 +635,7 @@ public static boolean startCounter;
         catch (Exception e){
             System.out.println("VIEW IS ALREADY REMOVED");
         }
-        if(speedLimit.equals("restriction_ends_80") && !speedHist.isEmpty() && speedHist.peek().equals("speed_limit_80")){
+        if((speedLimit.equals("restriction_ends_80") )&& (!speedHist.isEmpty() )&& (speedHist.peek().equals("speed_limit_80"))){
             speedHist.pop();
             speedLimit = speedHist.peek();
         }
@@ -676,10 +676,10 @@ public static boolean startCounter;
             /*
             options = new FloatingViewManager.Options();
             options.overMargin = (int) (16 * metrics.density);
-
              */
             mFloatingViewManager.addViewToWindow(trafficSignView, options, "traffic sign");
-            if(speedHist.isEmpty() || !speedLimit.equals(speedHist.peek()))
+
+            if(speedHist.isEmpty() || (!speedLimit.equals(speedHist.peek())))
                 speedHist.push(speedLimit);
         }
     }

@@ -13,6 +13,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Size;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -40,9 +41,10 @@ import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
 import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
 import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
+import static com.example.simon.cameraapp.CameraService.lockk;
 import static com.example.simon.cameraapp.CameraService.readLock;
 import static java.lang.Thread.sleep;
-import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
+//import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.MainActivity.detectorServiceThread;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.addOtherSign;
@@ -65,7 +67,7 @@ public class DetectorService extends Service {
         }
     }
     private static final Logger LOGGER = new Logger();
-
+    Bitmap bmp;
     // Configuration values for the prepackaged SSD model.
     private static final int TF_OD_API_INPUT_SIZE = 300;
     private static final boolean TF_OD_API_IS_QUANTIZED = false;
@@ -106,11 +108,11 @@ public class DetectorService extends Service {
     static String previousLabel;
     public static  boolean started = false;
     public static int flag = 3;
-
+    public static boolean newPicSaved=false;
     private static Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
     public static Handler handler;
-
+    int recentPicsSize=0;
     public DetectorService() {
     }
 
@@ -170,7 +172,7 @@ public class DetectorService extends Service {
                             getApplicationContext(), "Classifier could not be initialized", Toast.LENGTH_SHORT);
             toast.show();
         }
-        closeAppStopDetection=false;
+
         previewWidth = getPreviewWidth();
         previewHeight = getPreviewHeight();
 
@@ -193,7 +195,6 @@ public class DetectorService extends Service {
                     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
                     @Override
                     public void run() {
-
                         if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
                             try {
                                 throw new InterruptedException();
@@ -201,30 +202,49 @@ public class DetectorService extends Service {
                                // e.printStackTrace();
                             }
                         }
-                        else{
-                            readLock.lock();
-                            if (recentPics.size() > 0) {
-                               // System.out.println("recentpic is not empty");
-                                Bitmap bmp = (recentPics).get(recentPics.size() - 1);
-                                data = bmp.copy(bmp.getConfig(), false);
-                                readLock.unlock();
-                                isProcessingFrame = true;
-                                processImage();
-                                readyForNextImage();
-                            } else {
-                                System.out.println("DetectorService:0 recent pics");
-                                readLock.unlock();
+                      else{
+                            synchronized (lockk) {
+                                try {
+                                    lockk.wait(); // Will wake up lock.wait()
+                                    System.out.println("GOT THE LOCK OF NEW PIC");
+                                } catch (InterruptedException e) {
+                                    //e.printStackTrace();
+                                }
                             }
-                            isProcessingFrame = false;
+                            readLock.lock();
+                         try {
+                               recentPicsSize = recentPics.size();
+                              if (recentPicsSize > 0) {
+                                  bmp = (recentPics).get(recentPicsSize - 1);
+                                  data = bmp.copy(bmp.getConfig(), false);
+                                  //data =Bitmap.createBitmap(recentPics.get(recentPicsSize-1));
+                                  bmp =null;
+                                  newPicSaved=true;
+                              }
+                              else {
+                                  System.out.println("DetectorService:0 recent pics");
+                                  isProcessingFrame = false;
+                              }
+                          } finally {
+                                readLock.unlock();
+                          }
+                         if(newPicSaved) {
+                              isProcessingFrame = true;
+                              processImage();
+                              newPicSaved=false;
+                              data.recycle();
+                              isProcessingFrame = false;
+                          }
+                          readyForNextImage();
                         }
                     }
                 };
         started = true;
+        handler = new Handler(Looper.getMainLooper());
         super.onStartCommand(intent, flags, startId);
         detectorServiceThread = new Thread(postInferenceCallback);
         detectorServiceThread.start();
      //   sign_detect();
-        handler = new Handler();
         return Service.START_NOT_STICKY;
     }
 
@@ -253,11 +273,11 @@ public class DetectorService extends Service {
         //System.out.println("PROCESS IMAGE");
         // No mutex needed as this method is not reentrant.
         if (computingDetection) {
+            System.out.println("Computing detection true");
             readyForNextImage();
             return;
         }
         computingDetection = true;
-
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(data, frameToCropTransform, null);
         // For examining the actual TF input.
@@ -272,31 +292,32 @@ public class DetectorService extends Service {
                 minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
                 break;
         }
-
+        System.out.println("One start process");
         for (final Classifier.Recognition result : results) {
             final RectF location = result.getLocation();
             if (location != null && result.getConfidence() >= minimumConfidence) {
-
                 // Update Service HERE
                 System.out.println("RESULT ID: " + result.getTitle());
-                if (speedLabels.contains(result.getTitle()) && !result.getTitle().equals(previousLabel) && show) {
+                if (speedLabels.contains(result.getTitle()) &&( !(result.getTitle().equals(previousLabel)) )&& show) {
                     //mServer.changeSpeedSign(result.getTitle());
-                    System.out.println("speed sign recognized");
-                    UIrunnable = new Runnable() {
+                    System.out.println("NEW speed sign recognized");
+                   Runnable speedSignRunnable = new Runnable() {
                         @Override
                         public void run() {
+                            System.out.println("CURRENT THREAD iN new speed sign:"+Thread.currentThread().getName());
                             changeSpeedSign(result.getTitle());
                         }
                     };
-                    handler.post(UIrunnable);
+                    handler.post(speedSignRunnable);
                     previousLabel = result.getTitle();
                 }
-                else if(otherLabels.size() < 2 && !otherLabels.containsKey(result.getTitle()) && !result.getTitle().equals(previousLabel) && show){
+                else if((otherLabels.size() < 2) && (!otherLabels.containsKey(result.getTitle()) )&&( !(result.getTitle().equals(previousLabel)) )&& show){
                     System.out.println("other sign recognized");
                     // UPDATE UI
                     Runnable temp1 = new Runnable() {
                         @Override
                         public void run() {
+                            System.out.println("CURRENT THREAD adding other sign:"+Thread.currentThread().getName());
                             addOtherSign(result.getTitle());
                         }
                     };
@@ -310,11 +331,13 @@ public class DetectorService extends Service {
             for (String sign : otherLabels.keySet()) {
                 int durationLeft = otherLabels.get(sign);
                // System.out.println(durationLeft);
-                if (durationLeft == 1) {
+                if (durationLeft <= 1) {
+                    System.out.println("Thread name:"+Thread.currentThread().getName()+"Sign:"+sign+"is getting removed");
                     // UPDATE UI
                     Runnable temp2 = new Runnable() {
                         @Override
                         public void run() {
+                            System.out.println("CURRENT THREAD adding other sign:"+Thread.currentThread().getName());
                             removeOtherSign(sign);
                         }
                     };
@@ -324,9 +347,10 @@ public class DetectorService extends Service {
                 otherLabels.put(sign, durationLeft - 1);
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                otherLabels.entrySet().removeIf(entry -> (entry.getValue() == 0));
+                otherLabels.entrySet().removeIf(entry -> (entry.getValue() <= 0));
             }
         }
+        System.out.println("One finish process");
         computingDetection = false;
         //readyForNextImage();
     }
@@ -336,13 +360,8 @@ public class DetectorService extends Service {
     }
 
     public static void readyForNextImage() {
-        //System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
-            //System.out.println("Ready for new image");
             postInferenceCallback.run();
-
-           // (new Handler()).postDelayed(postInferenceCallback, 100);
-
         }
     }
 

@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         @SuppressLint("WrongConstant")
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            //Toast.makeText(DetectorActivity.this, "Service is disconnected", 1000).show();
+            Toast.makeText(MainActivity.this, "Service is disconnected", 1000).show();
             System.out.println("DISCONNECTED");
             mBounded = false;
             detectorBounded=false;
@@ -178,7 +178,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main); // TO BE CHANGED
-
+        closeAppStopDetection=false;
 
         if(!created) {
             UIrunnable = new Runnable() {
@@ -213,6 +213,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         if(!mBounded) {
             Intent mIntent = new Intent(this, FloatingViewService.class);
             bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+            MainActivity.this.startService(mIntent);
             mBounded = true;
         }
 
@@ -249,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 if (feature1.isChecked()) {
                     //str1 = feature1.getTextOn().toString();
                     if(!FloatingViewService.show) {
-                        mServer.showSpeedLimit();
+                         mServer.showSpeedLimit();
                          Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
                          bindService(mIntent, mConnection, BIND_AUTO_CREATE);
                          MainActivity.this.startService(mIntent);
@@ -343,11 +344,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public synchronized void onPause() {
         LOGGER.d("onPause " + this);
-
+/* //DONT OPEN IT CAUSES TO STOP WHEN IT is Paused
         if(mBounded) {
             unbindService(mConnection);
             mBounded = false;
-        }
+        }*/
+
         super.onPause();
     }
 
