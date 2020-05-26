@@ -486,7 +486,7 @@ public static boolean startCounter;
 
     public void destroy() {
         if (mFloatingViewManager != null) {
-            mFloatingViewManager.removeOtherView("no_lane_icon");
+            //mFloatingViewManager.removeOtherView("no_lane_icon");
             mFloatingViewManager.removeAllViewToWindow();
             //mFloatingViewManager = null;
             created = false;
@@ -635,8 +635,12 @@ public static boolean startCounter;
         }
     }
 
-    public static void showNoLaneIcon(){
-        ImageView newView = (ImageView) inflater.inflate(R.layout.nolane, null, false);;
+    public static void showLaneIcon(String laneIconName){
+        ImageView newView = null;
+        if(laneIconName.equals("no_lane_icon"))
+            newView = (ImageView) inflater.inflate(R.layout.nolane, null, false);
+        else
+            newView = (ImageView) inflater.inflate(R.layout.greenlane, null, false);
         options = loadOptions(metrics, true);
         options.floatingViewY = 0;
         options.floatingViewX = 0;
@@ -645,8 +649,9 @@ public static boolean startCounter;
         mFloatingViewManager.addViewToWindow(newView, options, "no_lane_icon");
     }
 
-    public static void removeNoLaneIcon(){
+    public static void removeLaneIcon(){
         mFloatingViewManager.removeOtherView("no_lane_icon");
+        mFloatingViewManager.removeOtherView("green_lane_icon");
     }
 
     public static void removeOtherSign(String speedLimit){

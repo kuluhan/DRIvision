@@ -39,8 +39,8 @@ import okhttp3.Response;
 import static com.example.simon.cameraapp.CameraService.readLock;
 import static com.example.simon.cameraapp.CameraService.rgbFrameBitmap;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
-import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.removeNoLaneIcon;
-import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.showNoLaneIcon;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.removeLaneIcon;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.showLaneIcon;
 
 
 public class LaneService extends Service {
@@ -61,8 +61,8 @@ public class LaneService extends Service {
     String fileToRequest;
     String fileToRequest2;
     String fileName;
-    public static Runnable facePoseEstimator;
-    public static Thread faceThread;
+    public static Runnable laneTracker;
+    public static Thread laneThread;
     int k;
     static boolean responseReceived = true;
     final double FILERESOLUTIONPERCENT = 1.5;
@@ -72,6 +72,7 @@ public class LaneService extends Service {
     long alertMade;
     public static boolean laneIconShow = false;
     public static Handler handler;
+    private long initTime;
     //public static boolean stopOrderCameIn;
     // Class used for the client Binder.
 
@@ -110,7 +111,7 @@ public class LaneService extends Service {
                 .readTimeout(10, TimeUnit.SECONDS).build();
 
         JSON = MediaType.parse("application/json; charset=utf-8");
-        facePoseEstimator = new Runnable() {
+        laneTracker = new Runnable() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void run() {
@@ -157,15 +158,43 @@ public class LaneService extends Service {
         });
         handler = new Handler();
         alertMade = System.currentTimeMillis();
-        faceThread = new Thread(facePoseEstimator);
-        faceThread.start();
+        initTime = alertMade;
+        laneThread = new Thread(laneTracker);
+        laneThread.start();
         return Service.START_NOT_STICKY;
     }
 
 
     public void readyForNextIm() {
-        if (facePoseEstimator != null) {
-            facePoseEstimator.run();
+        if (laneTracker != null) {
+            //facePoseEstimator.run();
+            //(new Handler()).postDelayed(vehicleDetector, 1000);
+            if(System.currentTimeMillis() - initTime > 30000){
+                laneThread.interrupt();
+                laneThread = null;
+                /*
+                try {
+                    detector =
+                            TFLiteObjectDetectionAPIModel.create(
+                                    assetM,
+                                    TF_OD_API_MODEL_FILE,
+                                    TF_OD_API_LABELS_FILE,
+                                    TF_OD_API_INPUT_SIZE,
+                                    TF_OD_API_IS_QUANTIZED);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("MODEL RELOADED");
+                 */
+                laneThread = new Thread(laneTracker);
+                laneThread.start();
+                initTime = System.currentTimeMillis();
+            }
+            else {
+                //SystemClock.sleep(100);
+                laneTracker.run();
+            }
+            //facePoseEstimator.run();
             //(new Handler()).postDelayed(vehicleDetector, 1000);
         }
 
@@ -213,7 +242,8 @@ public class LaneService extends Service {
                             Runnable temp1 = new Runnable() {
                                 @Override
                                 public void run() {
-                                    showNoLaneIcon();
+                                    removeLaneIcon();
+                                    showLaneIcon("no_lane_icon");
                                 }
                             };
                             handler.post(temp1);
@@ -232,7 +262,8 @@ public class LaneService extends Service {
                             Runnable temp1 = new Runnable() {
                                 @Override
                                 public void run() {
-                                    removeNoLaneIcon();
+                                    removeLaneIcon();
+                                    showLaneIcon("green_lane_icon");
                                 }
                             };
                             handler.post(temp1);

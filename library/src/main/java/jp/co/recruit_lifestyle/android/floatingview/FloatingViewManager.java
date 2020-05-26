@@ -440,9 +440,11 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
 
     public void removeOtherView(String label){
         final FloatingView floatingView = otherViews.get(label);
-        removeViewToWindow(floatingView);
-        otherViews.remove(label);
-        System.out.println("floating view list size: " + mFloatingViewList.size());
+        if(floatingView != null) {
+            removeViewToWindow(floatingView);
+            otherViews.remove(label);
+            System.out.println("floating view list size: " + mFloatingViewList.size());
+        }
     }
 
     /**

@@ -377,7 +377,7 @@ public class DetectorService extends Service {
         //System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
             //System.out.println("Ready for new image");
-            if(System.currentTimeMillis() - initTime > 50000){
+            if(System.currentTimeMillis() - initTime > 20000){
                 detectorServiceThread.interrupt();
                 detectorServiceThread = null;
                 /*
@@ -399,7 +399,7 @@ public class DetectorService extends Service {
                 initTime = System.currentTimeMillis();
             }
             else {
-                SystemClock.sleep(100);
+                //SystemClock.sleep(100);
                 postInferenceCallback.run();
             }
            // (new Handler()).postDelayed(postInferenceCallback, 100);

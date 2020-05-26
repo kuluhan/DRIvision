@@ -302,9 +302,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
                 if (feature2.isChecked()){
                     if(!faceStarted) {
+                        /*
                         System.out.println("FACESERVICE STARTED");
                         Intent mIntent = new Intent(MainActivity.this, FaceService.class);
                         MainActivity.this.startService(mIntent);
+
+                         */
                         faceStarted = true;
                     }
                     if(faceStarted) {
@@ -368,10 +371,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             bindService(intent, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent);
 
-
+            /*
             Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
             bindService(intent2, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent2);
+
+             */
 
 
             Intent intent3 = new Intent(MainActivity.this, CalibrateService.class);

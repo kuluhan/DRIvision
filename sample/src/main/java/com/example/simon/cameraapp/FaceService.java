@@ -70,6 +70,7 @@ public class FaceService extends Service {
     MediaPlayer mp;
     private static TextToSpeech t1;
     long alertMade;
+    private long initTime;
     //public static boolean stopOrderCameIn;
     // Class used for the client Binder.
 
@@ -154,6 +155,7 @@ public class FaceService extends Service {
             }
         });
         alertMade = System.currentTimeMillis();
+        initTime = alertMade;
         faceThread = new Thread(facePoseEstimator);
         faceThread.start();
         return Service.START_NOT_STICKY;
@@ -162,7 +164,32 @@ public class FaceService extends Service {
 
     public void readyForNextIm() {
         if (facePoseEstimator != null) {
-            facePoseEstimator.run();
+            if(System.currentTimeMillis() - initTime > 30000){
+                faceThread.interrupt();
+                faceThread = null;
+                /*
+                try {
+                    detector =
+                            TFLiteObjectDetectionAPIModel.create(
+                                    assetM,
+                                    TF_OD_API_MODEL_FILE,
+                                    TF_OD_API_LABELS_FILE,
+                                    TF_OD_API_INPUT_SIZE,
+                                    TF_OD_API_IS_QUANTIZED);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("MODEL RELOADED");
+                 */
+                faceThread = new Thread(facePoseEstimator);
+                faceThread.start();
+                initTime = System.currentTimeMillis();
+            }
+            else {
+                //SystemClock.sleep(100);
+                facePoseEstimator.run();
+            }
+            //facePoseEstimator.run();
             //(new Handler()).postDelayed(vehicleDetector, 1000);
         }
 
