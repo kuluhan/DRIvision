@@ -9,6 +9,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -25,6 +26,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import jp.co.recruit.floatingview.R;
@@ -66,6 +68,8 @@ public class FaceService extends Service {
     final double FILERESOLUTIONPERCENT = 1.5;
     ArrayList<ArrayList<Rectangle>> toRemember;
     MediaPlayer mp;
+    private static TextToSpeech t1;
+    long alertMade;
     //public static boolean stopOrderCameIn;
     // Class used for the client Binder.
 
@@ -141,6 +145,15 @@ public class FaceService extends Service {
                 }
             }
         };
+        t1=new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    t1.setLanguage(Locale.US);
+                }
+            }
+        });
+        alertMade = System.currentTimeMillis();
         faceThread = new Thread(facePoseEstimator);
         faceThread.start();
         return Service.START_NOT_STICKY;
@@ -187,19 +200,20 @@ public class FaceService extends Service {
                     System.out.println(getResponse.toString());
                     if(!isConfident){
                         // TODO put icon
+                        /*
                         Toast.makeText(
                                 FaceService.this,
                                 "face not detected.",
                                 Toast.LENGTH_LONG)
                                 .show();
+
+                         */
                     }
                     else if(!driverAttention){
-                        // TODO voice alert
-                        Toast.makeText(
-                                FaceService.this,
-                                "look at the road you dumb fuck.",
-                                Toast.LENGTH_LONG)
-                                .show();
+                        if(System.currentTimeMillis() - alertMade > 5000) {
+                            t1.speak("look at the road", TextToSpeech.QUEUE_FLUSH, null);
+                            alertMade = System.currentTimeMillis();
+                        }
                     }
 
                 } catch (Exception e) {

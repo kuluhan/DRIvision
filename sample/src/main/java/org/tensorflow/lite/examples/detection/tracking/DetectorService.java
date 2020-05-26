@@ -13,6 +13,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.util.Size;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -28,6 +29,7 @@ import org.tensorflow.lite.examples.detection.tflite.TFLiteObjectDetectionAPIMod
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -102,7 +104,7 @@ public class DetectorService extends Service {
     static FloatingViewService mServer;
     static HashSet<String> speedLabels;
     static HashSet<String> otherSigns;
-    static HashMap<String, Integer> otherLabels;
+    //static HashMap<String, Integer> otherLabels;
     static String previousLabel;
     public static  boolean started = false;
     public static int flag = 3;
@@ -110,6 +112,9 @@ public class DetectorService extends Service {
     private static Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
     public static Handler handler;
+    private static String[] otherLabels;
+    private static int[] otherLabelDurations;
+    private static int numOtherLabels;
 
     public DetectorService() {
     }
@@ -143,7 +148,17 @@ public class DetectorService extends Service {
         otherSigns.add("keep_left");
         otherSigns.add("roundabout");
 
-        otherLabels = new HashMap<>();
+        otherLabels = new String[2];
+        for(int i = 0; i < 2; i++){
+            otherLabels[i] = "";
+        }
+
+        otherLabelDurations = new int[2];
+        for(int i = 0; i < 2; i++){
+            otherLabelDurations[i] = 0;
+        }
+
+        numOtherLabels = 0;
 
         /*
         Bundle bundle = intent.getExtras();
@@ -210,6 +225,7 @@ public class DetectorService extends Service {
                                 readLock.unlock();
                                 isProcessingFrame = true;
                                 processImage();
+                                System.out.println("DETECT");
                                 readyForNextImage();
                             } else {
                                 System.out.println("DetectorService:0 recent pics");
@@ -264,8 +280,9 @@ public class DetectorService extends Service {
         if (SAVE_PREVIEW_BITMAP) {
             ImageUtils.saveBitmap(croppedBitmap);
         }
-        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
 
+        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+        //final List<Classifier.Recognition> results = new ArrayList<>();
         float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
         switch (MODE) {
             case TF_OD_API:
@@ -291,42 +308,58 @@ public class DetectorService extends Service {
                     handler.post(UIrunnable);
                     previousLabel = result.getTitle();
                 }
-                else if(otherLabels.size() < 2 && !otherLabels.containsKey(result.getTitle()) && !result.getTitle().equals(previousLabel) && show){
+                else if(numOtherLabels < 2 && otherSigns.contains(result.getTitle()) && show){
                     System.out.println("other sign recognized");
-                    // UPDATE UI
-                    Runnable temp1 = new Runnable() {
-                        @Override
-                        public void run() {
-                            addOtherSign(result.getTitle());
+                    boolean contains = false;
+                    for(int i = 0; i < 2; i++){
+                        if(otherLabels[i] != null && otherLabels[i].equals(result.getTitle())){
+                            contains = true;
+                            break;
                         }
-                    };
-                    handler.post(temp1);
-                    otherLabels.put(result.getTitle(), 100);
+                    }
+                    if(!contains) {
+                        int i;
+                        for(i = 0; i < 2; i++){
+                            if(otherLabels[i] == null || otherLabels[i].equals("")){
+                                otherLabels[i] = result.getTitle();
+                                break;
+                            }
+                        }
+                        otherLabelDurations[i] = 20;
+                        numOtherLabels++;
+                        // UPDATE UI
+                        Runnable temp1 = new Runnable() {
+                            @Override
+                            public void run() {
+                                addOtherSign(result.getTitle());
+                            }
+                        };
+                        handler.post(temp1);
+                    }
                 }
             }
         }
         if(show) {
           //  System.out.println("Sign Detecor thread id:"+Thread.currentThread().getId()+" "+ Thread.currentThread().getName());
-            for (String sign : otherLabels.keySet()) {
-                int durationLeft = otherLabels.get(sign);
-               // System.out.println(durationLeft);
-                if (durationLeft == 1) {
+            for(int i = 0; i < 2; i++){
+                otherLabelDurations[i] -= 1;
+                if(otherLabelDurations[i] == 0 && otherLabels[i] != null && !otherLabels[i].equals("")){
                     // UPDATE UI
-                    Runnable temp2 = new Runnable() {
+                    String label = otherLabels[i];
+                    Runnable temp1 = new Runnable() {
                         @Override
                         public void run() {
-                            removeOtherSign(sign);
+                            System.out.println("REMOVE LABEL");
+                            removeOtherSign(label);
                         }
                     };
-                    handler.post(temp2);
-                    //otherLabels.remove(sign);
+                    handler.post(temp1);
+                    otherLabels[i] = "";
+                    numOtherLabels--;
                 }
-                otherLabels.put(sign, durationLeft - 1);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                otherLabels.entrySet().removeIf(entry -> (entry.getValue() == 0));
             }
         }
+        System.out.println("num other labels: " + numOtherLabels);
         computingDetection = false;
         //readyForNextImage();
     }
@@ -339,6 +372,7 @@ public class DetectorService extends Service {
         //System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
             //System.out.println("Ready for new image");
+            SystemClock.sleep(300);
             postInferenceCallback.run();
 
            // (new Handler()).postDelayed(postInferenceCallback, 100);

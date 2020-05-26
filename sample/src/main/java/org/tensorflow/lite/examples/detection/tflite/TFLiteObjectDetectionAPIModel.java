@@ -151,13 +151,14 @@ public class TFLiteObjectDetectionAPIModel implements Classifier {
 
   @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
   @Override
-  public List<Recognition> recognizeImage(final Bitmap bitmap) {
+  public synchronized List<Recognition> recognizeImage(final Bitmap bitmap) {
     // Log this method so that it can be analyzed with systrace.
-    Trace.beginSection("recognizeImage");
+    //Trace.beginSection("recognizeImage");
 
-    Trace.beginSection("preprocessBitmap");
+    //Trace.beginSection("preprocessBitmap");
     // Preprocess the image data from 0-255 int to normalized float based
     // on the provided parameters.
+
     bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
 
     imgData.rewind();
@@ -176,10 +177,10 @@ public class TFLiteObjectDetectionAPIModel implements Classifier {
         }
       }
     }
-    Trace.endSection(); // preprocessBitmap
+    //Trace.endSection(); // preprocessBitmap
 
     // Copy the input data into TensorFlow.
-    Trace.beginSection("feed");
+    //Trace.beginSection("feed");
     outputLocations = new float[1][NUM_DETECTIONS][4];
     outputClasses = new float[1][NUM_DETECTIONS];
     outputScores = new float[1][NUM_DETECTIONS];
@@ -191,12 +192,12 @@ public class TFLiteObjectDetectionAPIModel implements Classifier {
     outputMap.put(1, outputClasses);
     outputMap.put(2, outputScores);
     outputMap.put(3, numDetections);
-    Trace.endSection();
+    //Trace.endSection();
 
     // Run the inference call.
-    Trace.beginSection("run");
+    //Trace.beginSection("run");
     tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
-    Trace.endSection();
+    //Trace.endSection();
 
     // Show the best detections.
     // after scaling them back to the input size.
@@ -219,7 +220,7 @@ public class TFLiteObjectDetectionAPIModel implements Classifier {
               outputScores[0][i],
               detection));
     }
-    Trace.endSection(); // "recognizeImage"
+    //Trace.endSection(); // "recognizeImage"
     return recognitions;
   }
 
