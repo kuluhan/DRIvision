@@ -37,10 +37,10 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-import static com.example.simon.cameraapp.CameraService.readLock;
-import static com.example.simon.cameraapp.CameraService.rgbFrameBitmap;
+import static com.example.simon.cameraapp.FrontCameraService.readLock;
+import static com.example.simon.cameraapp.FrontCameraService.rgbFrameBitmap;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.recentPics;
+import static com.example.simon.cameraapp.FrontCameraService.recentPics;
 
 
 public class FaceService extends Service {

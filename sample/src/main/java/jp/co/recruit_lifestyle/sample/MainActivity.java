@@ -365,12 +365,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             bindService(intent, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent);
 
-            /*
+
             Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
             bindService(intent2, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent2);
 
-             */
 
             Intent intent3 = new Intent(MainActivity.this, CalibrateService.class);
             bindService(intent3, mConnection, BIND_AUTO_CREATE);
@@ -447,11 +446,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 bindService(intent, mConnection, BIND_AUTO_CREATE);
                 MainActivity.this.startService(intent);
 
-                /*Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
+                Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
                 bindService(intent2, mConnection, BIND_AUTO_CREATE);
                 MainActivity.this.startService(intent2);
 
-                 */
+
             } else {
                 requestPermission();
             }

@@ -2,9 +2,12 @@ package com.example.simon.cameraapp;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -17,11 +20,11 @@ import android.os.IBinder;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import org.tensorflow.lite.examples.detection.customview.AutoFitTextureView;
@@ -40,24 +43,21 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import jp.co.recruit.floatingview.R;
-import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
 
 /// bunlar değişecekkk
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.imageConverter;
 
 
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
 public class FrontCameraService extends Service implements Camera.PreviewCallback {
     public static ReentrantReadWriteLock lck =new ReentrantReadWriteLock();
     public static Lock writeLock =lck.writeLock();
-    public static CopyOnWriteArrayList<byte[]> recentPics;
+    public static CopyOnWriteArrayList<Bitmap> recentPics;
     public static int previewWidth = 0;
     public static int previewHeight = 0;
     public static Runnable imageConverter;
-
+    private static Matrix frameToCropTransform;
     private static Bitmap croppedBitmap = null;
     public static boolean isProcessingFrame = false;
     public static byte[][] yuvBytes = new byte[3][];
@@ -72,7 +72,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
     List picList;
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
-    private static Bitmap rgbFrameBitmap = null;
+    public static Bitmap rgbFrameBitmap = null;
     //public TextureView mSurfaceView;
     public static Camera mServiceCamera;
     private SurfaceView mBackSurfaceView;
@@ -142,16 +142,38 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
                 try {
                     // access the resource protected by this lock
                     camera.addCallbackBuffer(data);
-                    recentPics.add(data);
+                    imageConverter.run();
+                    recentPics.add(rgbFrameBitmap);
                     while (recentPics.size() > SIZEOFRECENTPICS)
                         recentPics.remove(0);
+                    //  System.out.println("AddingNEWDATA" + recentPics.size());
                     readyForNextImage2();
-                } finally {
+                }finally {
                     writeLock.unlock();
                 }
-
             }
         };
+        imageConverter =
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        yuvBytes[0] = data;
+                        DetectorService.yRowStride = previewWidth;
+                        ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
+                        rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
+                        rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
+                        int sensorOrientation = 90 - getScreenOrientation();
+                        frameToCropTransform  =
+                                ImageUtils.getTransformationMatrix(
+                                        previewWidth, previewHeight,
+                                        previewWidth, previewHeight,
+                                        sensorOrientation, false);
+                        Bitmap newBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
+                        final Canvas canvas = new Canvas(newBitmap);
+                        canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+                        rgbFrameBitmap = newBitmap.copy(newBitmap.getConfig(),false);
+                    }
+                };
 
         readyForNextImage2();
     }
@@ -168,6 +190,23 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
     }
 
 
+    protected int getScreenOrientation() {
+
+        WindowManager windowService = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        int currentRatation = windowService.getDefaultDisplay().getRotation();
+
+        if (Surface.ROTATION_0 == currentRatation) {
+            currentRatation = 0;
+        } else if(Surface.ROTATION_180 == currentRatation) {
+            currentRatation = 180;
+        } else if(Surface.ROTATION_90 == currentRatation) {
+            currentRatation = 90;
+        } else if(Surface.ROTATION_270 == currentRatation) {
+            currentRatation = 270;
+        }
+
+        return currentRatation;
+    }
     private final TextureView.SurfaceTextureListener backSurfaceTextureListener =
             new TextureView.SurfaceTextureListener() {
                 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -279,7 +318,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
 
     @Override
     public void onCreate() {
-        recentPics= new CopyOnWriteArrayList<byte[]>();
+        recentPics= new CopyOnWriteArrayList<Bitmap>();
         tex2 = LayoutInflater.from(this).inflate(R.layout.texture2, null);
         textureView2 =  tex2.findViewById(R.id.texture2);
         textureView2.setSurfaceTextureListener(backSurfaceTextureListener);
