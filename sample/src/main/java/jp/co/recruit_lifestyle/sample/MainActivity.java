@@ -98,8 +98,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     CalibrateService calibrateServer;
     CameraService cameraServer;
     FrontCameraService frontCameraServer;
-   public static Handler floatingHandler =new Handler();
+    public static Handler floatingHandler =new Handler();
     public static boolean created = false;
+    public static boolean faceStarted = false;
 
     ServiceConnection mConnection = new ServiceConnection() {
         @SuppressLint("WrongConstant")
@@ -266,6 +267,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         Switch feature1 = (Switch)findViewById(R.id.switch1);
         Switch feature2  = (Switch) findViewById(R.id.switch2);
         Switch feature3 = (Switch) findViewById(R.id.switch3);
+        Switch feature4 = (Switch) findViewById(R.id.switch4);
         Button submit = (Button) findViewById(R.id.getBtn);
         submit.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -299,22 +301,27 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     }
                 }
                 if (feature2.isChecked()){
-                  /* Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
-                    bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-                    MainActivity.this.startService(mIntent);*/
-                    System.out.println("FACESERVICE STARTED");
-                    Intent mIntent = new Intent(MainActivity.this, FaceService.class);
-                    //bindService(mIntent7, mConnection, BIND_AUTO_CREATE);
-                    MainActivity.this.startService(mIntent);
+                    if(!faceStarted) {
+                        System.out.println("FACESERVICE STARTED");
+                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+                        MainActivity.this.startService(mIntent);
+                        faceStarted = true;
+                    }
+                    if(faceStarted) {
+                        Intent mIntent2 = new Intent(MainActivity.this, LaneService.class);
+                        MainActivity.this.startService(mIntent2);
+                    }
                 }
                 else{
                     //kapat
-                    Intent mIntent = new Intent(MainActivity.this, FaceService.class);
-                    //bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-                    MainActivity.this.stopService(mIntent);
+                    if(!feature4.isChecked()) {
+                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+                        MainActivity.this.stopService(mIntent);
+                    }
+                    Intent mIntent2 = new Intent(MainActivity.this, LaneService.class);
+                    MainActivity.this.stopService(mIntent2);
                 }
                 if (feature3.isChecked()){
-
                     Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
                     bindService(mIntent, mConnection, BIND_AUTO_CREATE);
                     MainActivity.this.startService(mIntent);
@@ -335,6 +342,19 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         System.out.println("Vehicle Detection stopped");
                     }
                 }
+                if(feature4.isChecked()){
+                    if(!faceStarted) {
+                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+                        MainActivity.this.startService(mIntent);
+                        faceStarted = true;
+                    }
+                }
+                else{
+                    if(!feature2.isChecked()) {
+                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+                        MainActivity.this.stopService(mIntent);
+                    }
+                }
             }
         });
 
@@ -345,9 +365,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             bindService(intent, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent);
 
+            /*
             Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
             bindService(intent2, mConnection, BIND_AUTO_CREATE);
             MainActivity.this.startService(intent2);
+
+             */
 
             Intent intent3 = new Intent(MainActivity.this, CalibrateService.class);
             bindService(intent3, mConnection, BIND_AUTO_CREATE);
