@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -115,6 +116,8 @@ public class DetectorService extends Service {
     private static String[] otherLabels;
     private static int[] otherLabelDurations;
     private static int numOtherLabels;
+    private static long initTime;
+    static AssetManager assetM;
 
     public DetectorService() {
     }
@@ -169,9 +172,10 @@ public class DetectorService extends Service {
 
         int cropSize = TF_OD_API_INPUT_SIZE;
         try {
+            assetM = getAssets();
             detector =
                     TFLiteObjectDetectionAPIModel.create(
-                            getAssets(),
+                            assetM,
                             TF_OD_API_MODEL_FILE,
                             TF_OD_API_LABELS_FILE,
                             TF_OD_API_INPUT_SIZE,
@@ -235,6 +239,7 @@ public class DetectorService extends Service {
                         }
                     }
                 };
+        initTime = System.currentTimeMillis();
         started = true;
         super.onStartCommand(intent, flags, startId);
         detectorServiceThread = new Thread(postInferenceCallback);
@@ -372,9 +377,31 @@ public class DetectorService extends Service {
         //System.out.println("Called nextIm");
         if (postInferenceCallback != null) {
             //System.out.println("Ready for new image");
-            SystemClock.sleep(300);
-            postInferenceCallback.run();
-
+            if(System.currentTimeMillis() - initTime > 50000){
+                detectorServiceThread.interrupt();
+                detectorServiceThread = null;
+                /*
+                try {
+                    detector =
+                            TFLiteObjectDetectionAPIModel.create(
+                                    assetM,
+                                    TF_OD_API_MODEL_FILE,
+                                    TF_OD_API_LABELS_FILE,
+                                    TF_OD_API_INPUT_SIZE,
+                                    TF_OD_API_IS_QUANTIZED);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("MODEL RELOADED");
+                 */
+                detectorServiceThread = new Thread(postInferenceCallback);
+                detectorServiceThread.start();
+                initTime = System.currentTimeMillis();
+            }
+            else {
+                SystemClock.sleep(100);
+                postInferenceCallback.run();
+            }
            // (new Handler()).postDelayed(postInferenceCallback, 100);
 
         }

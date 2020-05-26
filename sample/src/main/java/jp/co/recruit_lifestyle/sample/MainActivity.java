@@ -318,6 +318,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         Intent mIntent = new Intent(MainActivity.this, FaceService.class);
                         MainActivity.this.stopService(mIntent);
                     }
+                    if(mBounded){
+                        mServer.destroy();
+                    }
                     Intent mIntent2 = new Intent(MainActivity.this, LaneService.class);
                     MainActivity.this.stopService(mIntent2);
                 }

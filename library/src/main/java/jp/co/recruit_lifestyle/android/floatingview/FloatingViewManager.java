@@ -102,6 +102,12 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
 
     private boolean mIsMoveAccept;
 
+    private boolean noLaneSignShown;
+
+    private boolean noLaneEncountered;
+
+    private boolean speedSignRemoved;
+
     @DisplayMode
     private int mDisplayMode;
 
@@ -129,6 +135,9 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
         mFloatingViewList = new ArrayList<>();
         mFullscreenObserverView = new FullscreenObserverView(context, this);
         otherViews = new HashMap<>();
+        noLaneSignShown = false;
+        noLaneEncountered = false;
+        speedSignRemoved = false;
        // mTrashView = new TrashView(context);
     }
 /*
@@ -398,7 +407,7 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
         mWindowManager.addView(floatingView, floatingView.getWindowLayoutParams());
 
         if (isFirstAttach) {
-            mWindowManager.addView(mFullscreenObserverView, mFullscreenObserverView.getWindowLayoutParams());
+            //mWindowManager.addView(mFullscreenObserverView, mFullscreenObserverView.getWindowLayoutParams());
             mTargetFloatingView = floatingView;
         } else {
           //  removeViewImmediate(mTrashView);
@@ -418,12 +427,16 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
             mFloatingViewList.remove(matchIndex);
         }
 
+        /*
         if (mFloatingViewList.isEmpty()) {
             if (mFloatingViewListener != null) {
                 mFloatingViewListener.onFinishFloatingView();
             }
         }
+
+         */
     }
+
 
     public void removeOtherView(String label){
         final FloatingView floatingView = otherViews.get(label);
@@ -444,6 +457,8 @@ public class FloatingViewManager implements ScreenChangedListener, View.OnTouchL
             removeViewImmediate(floatingView);
         }
         mFloatingViewList.clear();
+        speedSignRemoved = false;
+        noLaneEncountered = false;
     }
 
     /**

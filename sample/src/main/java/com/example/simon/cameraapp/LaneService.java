@@ -7,6 +7,7 @@ import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.speech.tts.TextToSpeech;
@@ -38,6 +39,8 @@ import okhttp3.Response;
 import static com.example.simon.cameraapp.CameraService.readLock;
 import static com.example.simon.cameraapp.CameraService.rgbFrameBitmap;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.removeNoLaneIcon;
+import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.showNoLaneIcon;
 
 
 public class LaneService extends Service {
@@ -67,6 +70,8 @@ public class LaneService extends Service {
     MediaPlayer mp;
     private static TextToSpeech t1;
     long alertMade;
+    public static boolean laneIconShow = false;
+    public static Handler handler;
     //public static boolean stopOrderCameIn;
     // Class used for the client Binder.
 
@@ -150,6 +155,7 @@ public class LaneService extends Service {
                 }
             }
         });
+        handler = new Handler();
         alertMade = System.currentTimeMillis();
         faceThread = new Thread(facePoseEstimator);
         faceThread.start();
@@ -187,6 +193,7 @@ public class LaneService extends Service {
             }
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.KITKAT)
         protected void onPostExecute(JSONObject getResponse) {
             if (getResponse != null) {
                 try {
@@ -194,18 +201,43 @@ public class LaneService extends Service {
                     System.out.println("distance from center: " + centerDist);
                     if(centerDist == -1){
                         // TODO put icon
+                        /*
                         Toast.makeText(
                                 LaneService.this,
                                 "lane not detected",
                                 Toast.LENGTH_LONG)
                                 .show();
+
+                         */
+                        if(!laneIconShow){
+                            Runnable temp1 = new Runnable() {
+                                @Override
+                                public void run() {
+                                    showNoLaneIcon();
+                                }
+                            };
+                            handler.post(temp1);
+                            laneIconShow = true;
+                        }
                     }
-                    else if(centerDist > 0.6){
-                        Toast.makeText(
-                                LaneService.this,
-                                "lane switched",
-                                Toast.LENGTH_LONG)
-                                .show();
+                    else{
+                        if(centerDist > 0.6){
+                            Toast.makeText(
+                                    LaneService.this,
+                                    "lane switched",
+                                    Toast.LENGTH_LONG)
+                                    .show();
+                        }
+                        if(laneIconShow){
+                            Runnable temp1 = new Runnable() {
+                                @Override
+                                public void run() {
+                                    removeNoLaneIcon();
+                                }
+                            };
+                            handler.post(temp1);
+                            laneIconShow = false;
+                        }
                     }
 
                 } catch (Exception e) {

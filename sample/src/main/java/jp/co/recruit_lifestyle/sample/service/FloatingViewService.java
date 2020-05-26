@@ -486,6 +486,7 @@ public static boolean startCounter;
 
     public void destroy() {
         if (mFloatingViewManager != null) {
+            mFloatingViewManager.removeOtherView("no_lane_icon");
             mFloatingViewManager.removeAllViewToWindow();
             //mFloatingViewManager = null;
             created = false;
@@ -632,6 +633,20 @@ public static boolean startCounter;
             //options.overMargin = (int) (16 * metrics.density);
             mFloatingViewManager.addViewToWindow(newView, options, speedLimit);
         }
+    }
+
+    public static void showNoLaneIcon(){
+        ImageView newView = (ImageView) inflater.inflate(R.layout.nolane, null, false);;
+        options = loadOptions(metrics, true);
+        options.floatingViewY = 0;
+        options.floatingViewX = 0;
+        //options.floatingViewX = options.floatingViewX - numOtherSigns * (10);
+        //options.overMargin = (int) (16 * metrics.density);
+        mFloatingViewManager.addViewToWindow(newView, options, "no_lane_icon");
+    }
+
+    public static void removeNoLaneIcon(){
+        mFloatingViewManager.removeOtherView("no_lane_icon");
     }
 
     public static void removeOtherSign(String speedLimit){
