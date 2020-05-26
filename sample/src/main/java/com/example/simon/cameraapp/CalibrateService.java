@@ -78,7 +78,6 @@ public class CalibrateService extends Service {
     String fileName;
     public static Runnable facePoseEstimator;
     public static Thread faceThread;
-    int k;
     static boolean responseReceived = true;
     final double FILERESOLUTIONPERCENT = 1.5;
     ArrayList<ArrayList<Rectangle>> toRemember;
