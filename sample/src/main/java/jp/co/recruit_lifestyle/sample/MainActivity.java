@@ -248,6 +248,25 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             bindService(mIntent, mConnection, BIND_AUTO_CREATE);
             detectorBounded = true;
         }*/
+        if (hasPermission()) {
+            System.out.println("Main Activitythread id:"+Thread.currentThread().getId()+" "+ Thread.currentThread().getName());
+            System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
+
+            Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
+            bindService(intent2, mConnection, BIND_AUTO_CREATE);
+            MainActivity.this.startService(intent2);
+
+            Intent intent = new Intent(MainActivity.this, CameraService.class);
+            bindService(intent, mConnection, BIND_AUTO_CREATE);
+            MainActivity.this.startService(intent);
+
+            Intent intent3 = new Intent(MainActivity.this, CalibrateService.class);
+            bindService(intent3, mConnection, BIND_AUTO_CREATE);
+            MainActivity.this.startService(intent3);
+
+        } else {
+            requestPermission();
+        }
 
         Button calibrate = (Button)findViewById(R.id.calibrate);
         calibrate.setOnClickListener(new View.OnClickListener() {
@@ -286,6 +305,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 else {
                     if(DetectorService.started)
                     {
+                        Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
+                        MainActivity.this.stopService(mIntent);
                         mServer.destroy();
                         DetectorService.started=false;
                         // unbindService(mConnection);
@@ -294,7 +315,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                             detectorServiceThread.join();
                             detectorServiceThread = null;
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            //e.printStackTrace();
                             System.out.println("InterruptedException while Sign Detection join ");
                         }
                         System.out.println("Sign Detection stopped");
@@ -302,12 +323,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
                 if (feature2.isChecked()){
                     if(!faceStarted) {
-                        /*
                         System.out.println("FACESERVICE STARTED");
                         Intent mIntent = new Intent(MainActivity.this, FaceService.class);
                         MainActivity.this.startService(mIntent);
-
-                         */
                         faceStarted = true;
                     }
                     if(faceStarted) {
@@ -317,7 +335,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
                 else{
                     //kapat
-                    if(!feature4.isChecked()) {
+                    if((!feature3.isChecked())&&(!feature4.isChecked())) {
                         Intent mIntent = new Intent(MainActivity.this, FaceService.class);
                         MainActivity.this.stopService(mIntent);
                     }
@@ -328,11 +346,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     MainActivity.this.stopService(mIntent2);
                 }
                 if (feature3.isChecked()){
-                    Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
-                    bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-                    MainActivity.this.startService(mIntent);
+                    if(!faceStarted) {
+                        System.out.println("FACESERVICE STARTED");
+                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+                        MainActivity.this.startService(mIntent);
+                        faceStarted = true;
+                    }
+                    if(faceStarted) {
+                        Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
+                        bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                        MainActivity.this.startService(mIntent);
+                    }
                 }
                 else{
+                    if((!feature4.isChecked())&&(!feature2.isChecked())) {
+                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+                        MainActivity.this.stopService(mIntent);
+                    }
                     if(VehicleService.started)
                     {
                         VehicleService.started=false;
@@ -356,7 +386,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     }
                 }
                 else{
-                    if(!feature2.isChecked()) {
+                    if((!feature2.isChecked())&&(!feature3.isChecked())) {
                         Intent mIntent = new Intent(MainActivity.this, FaceService.class);
                         MainActivity.this.stopService(mIntent);
                     }
@@ -364,28 +394,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         });
 
-        if (hasPermission()) {
-            System.out.println("Main Activitythread id:"+Thread.currentThread().getId()+" "+ Thread.currentThread().getName());
-            System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
-            Intent intent = new Intent(MainActivity.this, CameraService.class);
-            bindService(intent, mConnection, BIND_AUTO_CREATE);
-            MainActivity.this.startService(intent);
-
-            /*
-            Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
-            bindService(intent2, mConnection, BIND_AUTO_CREATE);
-            MainActivity.this.startService(intent2);
-
-             */
-
-
-            Intent intent3 = new Intent(MainActivity.this, CalibrateService.class);
-            bindService(intent3, mConnection, BIND_AUTO_CREATE);
-            MainActivity.this.startService(intent3);
-
-        } else {
-            requestPermission();
-        }
     }
 
     @SuppressLint({"NewApi"})
@@ -449,7 +457,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSIONS_REQUEST) {
             if (allPermissionsGranted(grantResults)) {
-                System.out.println("NUMBER OF CAMERAS: " + getNumberOfCameras());
+                System.out.println("NUMBER OF CAMERAS222: " + getNumberOfCameras());
                 Intent intent = new Intent(MainActivity.this, CameraService.class);
                 bindService(intent, mConnection, BIND_AUTO_CREATE);
                 MainActivity.this.startService(intent);

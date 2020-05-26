@@ -19,10 +19,8 @@ import androidx.annotation.RequiresApi;
 import org.tensorflow.lite.examples.detection.env.ImageUtils;
 
 import java.io.IOException;
-
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewHeight;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewWidth;
-
+import static com.example.simon.cameraapp.CameraService.previewHeight;
+import static com.example.simon.cameraapp.CameraService.previewWidth;
 //import static com.example.simon.cameraapp.CameraService.rgbBytes;
 //import static com.example.simon.cameraapp.CameraService.yuvBytes;
 

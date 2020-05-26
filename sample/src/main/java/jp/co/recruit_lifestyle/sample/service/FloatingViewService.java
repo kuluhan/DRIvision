@@ -7,7 +7,7 @@ import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.io.SeekableByteChannel;
 import org.jcodec.common.model.Rational;
 import org.tensorflow.lite.examples.detection.tracking.DetectorService;
-
+import static com.example.simon.cameraapp.CameraService.recentPics;
 import android.app.Notification;
 import android.app.Service;
 import android.content.Context;
@@ -204,7 +204,7 @@ public static boolean startCounter;
                             //earlier images
                             if (counter == 0) {
                                 copied = new ArrayList<>();
-                                for (Bitmap bitmap : DetectorService.recentPics) {
+                                for (Bitmap bitmap : recentPics) {
                                     //Add the object clones
                                     counter++;
                                     copied.add(bitmap.copy(bitmap.getConfig(), true));
@@ -219,8 +219,8 @@ public static boolean startCounter;
                                 if(closeAppStopDetection){
                                     break;
                                 }
-                                getter = DetectorService.recentPics.size() - 1;
-                                Bitmap bitmapData = DetectorService.recentPics.get(getter);
+                                getter = recentPics.size() - 1;
+                                Bitmap bitmapData = recentPics.get(getter);
                                 newPart.add(bitmapData.copy(bitmapData.getConfig(), false));
                                 counter++;
                               //  System.out.println("Resim islendi" + counter);

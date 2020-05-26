@@ -49,8 +49,8 @@ import okhttp3.Response;
 import okhttp3.RequestBody;
 import static com.example.simon.cameraapp.CameraService.readLock;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.recentPics;
-
+import static com.example.simon.cameraapp.CameraService.recentPics;
+import static com.example.simon.cameraapp.FaceService.notLooking;
 
 
 public class VehicleService extends Service  {
@@ -71,7 +71,7 @@ public class VehicleService extends Service  {
     public static Thread vehicleThread;
     int k;
     static boolean responseReceived = true;
-    final double FILERESOLUTIONPERCENT= 1.5;
+    final double FILERESOLUTIONPERCENT= 0.5;
     ArrayList<ArrayList<Rectangle>> toRemember;
     MediaPlayer mp;
     public IBinder mBinder = new LocalBinder();
@@ -105,7 +105,7 @@ public class VehicleService extends Service  {
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-
+        notLooking=true;
         client = new OkHttpClient().newBuilder().connectTimeout(0, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS).build();
@@ -115,35 +115,33 @@ public class VehicleService extends Service  {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void run() {
-                if(closeAppStopDetection||Thread.currentThread().isInterrupted()){
-                    try {
-                        throw new InterruptedException();
-                    } catch (InterruptedException e) {
-                        // e.printStackTrace();
-                    }
-                }
-                 else {
+                while(true) {
+                    if (closeAppStopDetection || Thread.currentThread().isInterrupted()) {
+                        try {
+                            throw new InterruptedException();
+                        } catch (InterruptedException e) {
+                            // e.printStackTrace();
+                        }
+                    } else {
                         readLock.lock();
                         try {
                             // access the resource protected by this lock
                             Bitmap bmp = (recentPics).get(recentPics.size() - 1);
                             data = bmp.copy(bmp.getConfig(), false);
 
-                        }finally {
+                        } finally {
                             readLock.unlock();
                         }
 
-                         try {
-                              makeGetRequest();
-                             SystemClock.sleep(500);
-
-                         } catch (IOException ignored) {
-                                System.out.println("IOException make request" + ignored);
-                         } catch (InterruptedException m) {
-                                System.out.println("InterruptedException " + m);
-                         }
-                        readyForNextIm();
-
+                        try {
+                            makeGetRequest();
+                            SystemClock.sleep(500);
+                        } catch (IOException ignored) {
+                            System.out.println("IOException make request" + ignored);
+                        } catch (InterruptedException m) {
+                            System.out.println("InterruptedException " + m);
+                        }
+                    }
                 }
             }
         };
@@ -152,16 +150,6 @@ public class VehicleService extends Service  {
         return Service.START_NOT_STICKY;
     }
 
-
-
-    public void readyForNextIm(){
-        if(vehicleDetector!=null)
-        {
-            vehicleDetector.run();
-            //(new Handler()).postDelayed(vehicleDetector, 1000);
-        }
-
-    }
 
 
     public void makeGetRequest() throws IOException,InterruptedException {
@@ -215,7 +203,7 @@ public class VehicleService extends Service  {
                         toRemember.add(fileVehicleList.get(y));
                     }
                     //split("\[")[1]
-                    if(evaluateCrashing())
+                    if(evaluateCrashing()&& notLooking)
                     {
                         mp.start();
                     }
@@ -235,7 +223,7 @@ public class VehicleService extends Service  {
 
             for(int k=0;k<latest.size();k++){
                 Rectangle cur =latest.get(k);
-                if((cur.equals("person")&&(cur.getArea()>200*200*FILERESOLUTIONPERCENT))||(cur.getArea()>FILERESOLUTIONPERCENT*250*400 ))
+                if(((cur.getType().equals("person"))&&(cur.getArea()>100*200*FILERESOLUTIONPERCENT))||((cur.getType().equals("car")||(cur.getType().equals("bus")))&&cur.getArea()>FILERESOLUTIONPERCENT*300*300 ))
                 {
                     Log.d("Here","It found person or realy big car");
                     return true;
@@ -254,7 +242,7 @@ public class VehicleService extends Service  {
                     {
                         Rectangle cur =later.get(iter);
                         ArrayList<Integer> matches= possibleMatch(earlier,cur);
-                        if(matches.isEmpty()&&((cur.getArea())>400*600*FILERESOLUTIONPERCENT)||(cur.getH()>400*FILERESOLUTIONPERCENT)||(cur.getW()>400*FILERESOLUTIONPERCENT)) {
+                        if((matches.isEmpty())&&(((cur.getArea())>250*300*FILERESOLUTIONPERCENT)||(cur.getH()>280*FILERESOLUTIONPERCENT)||(cur.getW()>420*FILERESOLUTIONPERCENT))) {
                             Log.d("Tagat","noticing too much speed and car getting close compared to earlier images ");
                             return true;
                         }
@@ -272,7 +260,7 @@ public class VehicleService extends Service  {
             for(int c=0;c<list.size();c++)
             {
                 Rectangle cur= list.get(c);
-                if((Math.abs((given.getArea()/cur.getArea())-1)>0.3)&&((Math.abs(given.getX()/cur.getX()-1)<0.2))&&((Math.abs(given.getY()/cur.getY()-1)<0.2))) ///image yÃ¼zde 30dan fazla deÄŸiÅŸmediÄŸyse
+                if((Math.abs((given.getArea()/cur.getArea())-1)<0.1)&&((Math.abs(given.getX()/cur.getX()-1)<0.08))&&((Math.abs(given.getY()/cur.getY()-1)<0.08))) ///image yÃ¼zde 30dan fazla deÄŸiÅŸmediÄŸyse
                     matches.add(c);
             }
             return matches;

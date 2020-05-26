@@ -147,10 +147,10 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
                     while (recentPics.size() > SIZEOFRECENTPICS)
                         recentPics.remove(0);
                     //  System.out.println("AddingNEWDATA" + recentPics.size());
-                    readyForNextImage2();
                 }finally {
                     writeLock.unlock();
                 }
+                readyForNextImage2();
             }
         };
         imageConverter =

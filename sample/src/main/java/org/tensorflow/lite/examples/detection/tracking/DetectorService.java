@@ -40,9 +40,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import jp.co.recruit_lifestyle.sample.MainActivity;
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
-
-import static com.example.simon.cameraapp.CameraService.getPreviewHeight;
-import static com.example.simon.cameraapp.CameraService.getPreviewWidth;
+import static com.example.simon.cameraapp.CameraService.recentPics;
+import static com.example.simon.cameraapp.CameraService.previewHeight;
+import static com.example.simon.cameraapp.CameraService.previewWidth;
+import static com.example.simon.cameraapp.CameraService.isProcessingFrame;
+import static com.example.simon.cameraapp.CameraService.rgbBytes;
+import static com.example.simon.cameraapp.CameraService.yuvBytes;
+import static com.example.simon.cameraapp.CameraService.imageConverter;
 import static com.example.simon.cameraapp.CameraService.readLock;
 import static java.lang.Thread.sleep;
 import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
@@ -87,16 +91,12 @@ public class DetectorService extends Service {
     public  IBinder mBinder = new LocalBinder();
     OverlayView trackingOverlay;
     private Integer sensorOrientation;
-    public static int previewWidth = 0;
-    public static int previewHeight = 0;
+
 
     private static Bitmap croppedBitmap = null;
-    public static boolean isProcessingFrame = false;
-    public static byte[][] yuvBytes = new byte[3][];
-    public static int[] rgbBytes = null;
+
     public static int yRowStride;
-    public static Runnable imageConverter;
-    public static CopyOnWriteArrayList<Bitmap> recentPics;
+
     private static Classifier detector;
 
     private static boolean computingDetection = false;
@@ -190,8 +190,7 @@ public class DetectorService extends Service {
             toast.show();
         }
         closeAppStopDetection=false;
-        previewWidth = getPreviewWidth();
-        previewHeight = getPreviewHeight();
+
 
        // rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
         croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Bitmap.Config.ARGB_8888);

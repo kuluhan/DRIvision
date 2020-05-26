@@ -152,7 +152,6 @@ public class CalibrateService extends Service {
                     } catch (InterruptedException m) {
                         System.out.println("InterruptedException " + m);
                     }
-                    //readyForNextIm();
                 }
                 Thread.currentThread().interrupt();
                 return;

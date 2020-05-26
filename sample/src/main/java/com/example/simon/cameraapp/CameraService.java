@@ -17,6 +17,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
@@ -47,14 +48,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.MainActivity;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.imageConverter;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.isProcessingFrame;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewHeight;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.previewWidth;
 
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.rgbBytes;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.yuvBytes;
-import static org.tensorflow.lite.examples.detection.tracking.DetectorService.recentPics;
 
 
 @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -68,9 +62,15 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
     public static Bitmap rgbFrameBitmap = null;
+    public static boolean isProcessingFrame = false;
+    public static byte[][] yuvBytes = new byte[3][];
+    public static int[] rgbBytes = null;
+    public static int previewWidth = 0;
+    public static int previewHeight = 0;
     //public TextureView mSurfaceView;
     public static Camera mServiceCamera;
     private SurfaceView mBackSurfaceView;
+    public static CopyOnWriteArrayList<Bitmap> recentPics;
     private static Camera mBackServiceCamera;
     public static String TAG = "DualCamActivity";
     private LinearLayout mllFirst;
@@ -84,6 +84,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static final Object lockk = new Object();
     public static final int SIZEOFRECENTPICS=100;
     private static Matrix frameToCropTransform;
+    public static Runnable imageConverter;
    // public static  final MonitorObject myMonitorObject =new MonitorObject();
 
 
@@ -113,6 +114,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                 Camera.Size previewSize = camera.getParameters().getPreviewSize();
                 previewHeight = previewSize.height;
                 previewWidth = previewSize.width;
+                System.out.println("CAMERA HEİGHT:"+previewHeight+"wEİGHT: "+previewWidth);
                 rgbBytes = new int[previewWidth * previewHeight];
                 //onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 90);
             }
@@ -137,10 +139,11 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                     while (recentPics.size() > SIZEOFRECENTPICS)
                         recentPics.remove(0);
                     //  System.out.println("AddingNEWDATA" + recentPics.size());
-                    readyForNextImage2();
+
                 }finally {
                     writeLock.unlock();
                 }
+                readyForNextImage2();
             }
         };
         imageConverter =
@@ -332,7 +335,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT);
         mWindowManager.addView(tex, params);
-
         super.onCreate();
     }
 

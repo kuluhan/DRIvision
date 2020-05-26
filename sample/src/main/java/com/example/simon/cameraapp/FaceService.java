@@ -48,7 +48,7 @@ public class FaceService extends Service {
     public IBinder mBinder = new FaceService.LocalBinder();
     public static boolean started;
     static Bitmap data;
-
+    public static boolean notLooking=false;
     public static OkHttpClient client;
     MediaType JSON;
     URL url;
@@ -237,6 +237,7 @@ public class FaceService extends Service {
                          */
                     }
                     else if(!driverAttention){
+                        notLooking=true;
                         if(System.currentTimeMillis() - alertMade > 5000) {
                             t1.speak("look at the road", TextToSpeech.QUEUE_FLUSH, null);
                             alertMade = System.currentTimeMillis();

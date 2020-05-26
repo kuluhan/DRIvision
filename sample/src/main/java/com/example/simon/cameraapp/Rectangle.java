@@ -24,7 +24,7 @@ public class Rectangle implements Comparable<Rectangle> {
     public int getH() {
         return h;
     }
-
+public String getType(){return type;}
     public Rectangle(String type,int x, int y, int w, int h,float prob) {
         this.x = x;
         this.y = y;
