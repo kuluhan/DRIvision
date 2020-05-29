@@ -200,6 +200,7 @@ public class VehicleService extends Service  {
 
                     for(int y=0;y<fileVehicleList.size();y++)
                     {
+                        System.out.println("filevehiclesize: "+fileVehicleList.size());
                         toRemember.add(fileVehicleList.get(y));
                     }
                     //split("\[")[1]
@@ -231,7 +232,7 @@ public class VehicleService extends Service  {
             }
 
             //noticing too much speed and car getting close compared to earlier images
-            if(remSize>0)
+            if(remSize>1)
             {
                 for(int u=0;u<remSize-1;u++)
                 {
@@ -248,7 +249,7 @@ public class VehicleService extends Service  {
                         }
                     }
                 }
-                if(remSize>3)
+                if(remSize>2)
                     toRemember.remove(0);
             }
             return false;

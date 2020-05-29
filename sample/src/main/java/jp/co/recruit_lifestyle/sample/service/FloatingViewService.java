@@ -83,7 +83,7 @@ public class FloatingViewService extends Service implements FloatingViewListener
     boolean created = false;
     public static  Thread threadVideoSaver;
     final int NUMOFFRAMESINSECTOWRITE=10;
-    final int VIDEOFRAMELENGHT=200;
+    final int VIDEOFRAMELENGHT=600;
     public static final String EXTRA_CUTOUT_SAFE_AREA = "cutout_safe_area";
     private static Bitmap rgbFrameBitmap;
     private static final int NOTIFICATION_ID = 908114;

@@ -82,7 +82,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     private HandlerThread backgroundThread;
     public static Runnable imageSaver;
     public static final Object lockk = new Object();
-    public static final int SIZEOFRECENTPICS=100;
+    public static final int SIZEOFRECENTPICS=300;
     private static Matrix frameToCropTransform;
     public static Runnable imageConverter;
    // public static  final MonitorObject myMonitorObject =new MonitorObject();

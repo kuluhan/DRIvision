@@ -221,7 +221,7 @@ public class CalibrateService extends Service {
                         headPose = Double.parseDouble(headString);
                         Toast.makeText(
                                 CalibrateService.this,
-                                "Calibration Successful, Please Try Again.",
+                                "Calibration Successful, You can use attention tracking tool!",
                                 Toast.LENGTH_LONG)
                                 .show();
                     }

@@ -242,7 +242,8 @@ public class FaceService extends Service {
                             t1.speak("look at the road", TextToSpeech.QUEUE_FLUSH, null);
                             alertMade = System.currentTimeMillis();
                         }
-                    }
+                    }else if (driverAttention)
+                        notLooking= false;
 
                 } catch (Exception e) {
                     Log.e("Error :(", "--" + e);
