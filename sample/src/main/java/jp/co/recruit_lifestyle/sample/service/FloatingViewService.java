@@ -36,6 +36,8 @@ import androidx.core.app.NotificationCompat;
 import com.example.simon.cameraapp.CameraService;
 import com.example.simon.cameraapp.VehicleService;
 
+import com.example.simon.cameraapp.LaneService;
+import com.example.simon.cameraapp.FaceService;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -60,8 +62,14 @@ import static com.example.simon.cameraapp.CameraService.imageSaver;
 import static com.example.simon.cameraapp.CameraService.imagesaverHandler;
 import static com.example.simon.cameraapp.CameraService.lockk;
 import static com.example.simon.cameraapp.VehicleService.vehicleThread;
+import  com.example.simon.cameraapp.FrontCameraService;
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
+import static com.example.simon.cameraapp.FaceService.faceThread;
+import static com.example.simon.cameraapp.LaneService.laneThread;
+import static com.example.simon.cameraapp.VehicleService.vehicleThread;
+
+import static jp.co.recruit_lifestyle.sample.MainActivity.faceStarted;
 import static jp.co.recruit_lifestyle.sample.MainActivity.UIrunnable;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.MainActivity.detectorServiceThread;
@@ -432,7 +440,8 @@ public static boolean startCounter;
     @Override
     public void onDestroy() {
         //TODO: really close it
-        if (mFloatingView != null) mWindowManager.removeView(mFloatingView);
+        if (mFloatingView != null)
+            mWindowManager.removeView(mFloatingView);
         mFloatingViewManager.removeAllViewToWindow();
         closeAppStopDetection=true;
         synchronized (lockk) {
@@ -442,6 +451,10 @@ public static boolean startCounter;
              detectorServiceThread.interrupt();
         if(VehicleService.started)
             vehicleThread.interrupt();
+        if(LaneService.started)
+            laneThread.interrupt();
+        if(faceStarted)
+            faceThread.interrupt();
         //if(FloatingViewService.savingVideoStarted)
          //   threadVideoSaver.interrupt();
         stopSelf();
@@ -449,8 +462,11 @@ public static boolean startCounter;
             floatingHandler.removeCallbacks(UIrunnable);
         if(imagesaverHandler!=null)
         imagesaverHandler.removeCallbacks(imageSaver);
+        if(FrontCameraService.imagesaverHandler!=null)
+            FrontCameraService.imagesaverHandler.removeCallbacks(FrontCameraService.imageSaver);
         floatingHandler=null;
         imagesaverHandler=null;
+        FrontCameraService.imagesaverHandler=null;
         try {
             if(DetectorService.started)
                 if(detectorServiceThread.isAlive())
@@ -458,14 +474,19 @@ public static boolean startCounter;
             if(VehicleService.started)
               if(vehicleThread.isAlive())
                 vehicleThread.join();
-
+            if(LaneService.started)
+                if(laneThread.isAlive())
+                    laneThread.join();
+            if(faceStarted)
+                if(faceThread.isAlive())
+                    faceThread.join();
             if(savingVideoStarted)
                 if(threadVideoSaver.isAlive())
                  threadVideoSaver.join();
         }catch (InterruptedException E){
             System.out.println("App is not properly ended!");
         }
-        super.onDestroy();
+        //super.onDestroy();
         System.out.println("App is ended!");
       //  System.exit(0);
     }
