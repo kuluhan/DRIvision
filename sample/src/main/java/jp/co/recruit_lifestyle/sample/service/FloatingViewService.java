@@ -431,6 +431,7 @@ public static boolean startCounter;
     }
     @Override
     public void onDestroy() {
+        //TODO: really close it
         if (mFloatingView != null) mWindowManager.removeView(mFloatingView);
         mFloatingViewManager.removeAllViewToWindow();
         closeAppStopDetection=true;

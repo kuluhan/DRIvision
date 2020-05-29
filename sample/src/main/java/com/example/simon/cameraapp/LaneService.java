@@ -90,7 +90,7 @@ public class LaneService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        System.out.println("başladı");
+        System.out.println("lane başladı");
         host = "142.93.38.174"; ///////////////////ip of digitalocean : 142.93.38.174 /// zeyn local ip 192.168.1.22
         port = 8000;
         endpoint = "/predict";
@@ -282,8 +282,7 @@ public class LaneService extends Service {
             try {
                 // take the image from the asset folder
                 //String img = "img.jpg";
-                System.out.println("k:" + k);
-                String img = k + ".jpg";
+                System.out.println("lane run:" + k);
                 k++;
 
                 Response response = makeRequest();

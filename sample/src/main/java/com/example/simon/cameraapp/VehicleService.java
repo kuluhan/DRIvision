@@ -90,7 +90,7 @@ public class VehicleService extends Service  {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        System.out.println("başladı");
+        System.out.println("Vehicle başladı");
         host = "142.93.38.174"; ///////////////////ip of digitalocean : 142.93.38.174 /// zeyn local ip 192.168.1.22
         port = 8001;
         file = "/predict";
@@ -117,22 +117,17 @@ public class VehicleService extends Service  {
             public void run() {
                 while(true) {
                     if (closeAppStopDetection || Thread.currentThread().isInterrupted()) {
-                        try {
-                            throw new InterruptedException();
-                        } catch (InterruptedException e) {
-                            // e.printStackTrace();
-                        }
+                        System.out.println("Interruptedddddd!");
+                           break;
                     } else {
                         readLock.lock();
                         try {
                             // access the resource protected by this lock
                             Bitmap bmp = (recentPics).get(recentPics.size() - 1);
                             data = bmp.copy(bmp.getConfig(), false);
-
                         } finally {
                             readLock.unlock();
                         }
-
                         try {
                             makeGetRequest();
                             SystemClock.sleep(500);
@@ -142,6 +137,11 @@ public class VehicleService extends Service  {
                             System.out.println("InterruptedException " + m);
                         }
                     }
+                }
+                try{
+                   throw new InterruptedException();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         };
@@ -270,8 +270,7 @@ public class VehicleService extends Service  {
             try {
                 // take the image from the asset folder
                 //String img = "img.jpg";
-                System.out.println("k:"+k);
-                String img =k+".jpg";
+                System.out.println("vehicle run:"+k);
                 k++;
 
                 Response response= makeRequest();

@@ -1,5 +1,5 @@
 package jp.co.recruit_lifestyle.sample;
-
+import android.graphics.Color;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
@@ -18,6 +18,8 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.view.SurfaceHolder;
 import android.view.View;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -40,7 +42,8 @@ import com.example.simon.cameraapp.VehicleService;
 
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.tracking.DetectorService;
-
+import static com.example.simon.cameraapp.FaceService.faceThread;
+import static com.example.simon.cameraapp.LaneService.laneThread;
 import jp.co.recruit.floatingview.R;
 import jp.co.recruit_lifestyle.sample.fragment.FloatingViewControlFragment;
 import jp.co.recruit_lifestyle.sample.service.FloatingViewService;
@@ -292,6 +295,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void onClick(View v) {
+                // TODO: really close ALL UNCHECKED
                 String str1, str2;
                 if (feature1.isChecked()) {
                     //str1 = feature1.getTextOn().toString();
@@ -305,45 +309,44 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 else {
                     if(DetectorService.started)
                     {
-                        Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
-                        MainActivity.this.stopService(mIntent);
-                        mServer.destroy();
-                        DetectorService.started=false;
-                        // unbindService(mConnection);
-                        detectorServiceThread.interrupt();
-                        try {
-                            detectorServiceThread.join();
-                            detectorServiceThread = null;
-                        } catch (InterruptedException e) {
-                            //e.printStackTrace();
-                            System.out.println("InterruptedException while Sign Detection join ");
-                        }
-                        System.out.println("Sign Detection stopped");
+                       stopDetector();
                     }
                 }
                 if (feature2.isChecked()){
+
                     if(!faceStarted) {
                         System.out.println("FACESERVICE STARTED");
                         Intent mIntent = new Intent(MainActivity.this, FaceService.class);
                         MainActivity.this.startService(mIntent);
                         faceStarted = true;
+                        feature4.setChecked(true);
+                        feature4.setClickable(false);
+                        feature4.getTrackDrawable().setColorFilter(Color.GRAY,PorterDuff.Mode.MULTIPLY);
+                        feature4.getThumbDrawable().setColorFilter(Color.LTGRAY,PorterDuff.Mode.MULTIPLY);
                     }
                     if(faceStarted) {
-                        Intent mIntent2 = new Intent(MainActivity.this, LaneService.class);
-                        MainActivity.this.startService(mIntent2);
+                        if(!LaneService.started) {
+                            Intent mIntent2 = new Intent(MainActivity.this, LaneService.class);
+                            MainActivity.this.startService(mIntent2);
+                        }
                     }
                 }
                 else{
                     //kapat
-                    if((!feature3.isChecked())&&(!feature4.isChecked())) {
-                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
-                        MainActivity.this.stopService(mIntent);
+                    if((!feature3.isChecked())&&(!feature4.isClickable())) {
+                       // faceStop();
+                        feature4.setChecked(false);
+                        feature4.setClickable(true);
+                        feature4.getTrackDrawable().clearColorFilter();
+                        feature4.getThumbDrawable().clearColorFilter();
                     }
-                    if(mBounded){
+                    if(mBounded){ // deleted all floatingviews
                         mServer.destroy();
                     }
-                    Intent mIntent2 = new Intent(MainActivity.this, LaneService.class);
-                    MainActivity.this.stopService(mIntent2);
+                    if(LaneService.started) {
+                        System.out.println("GURDUUUU");
+                        stopLane();
+                    }
                 }
                 if (feature3.isChecked()){
                     if(!faceStarted) {
@@ -351,31 +354,30 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         Intent mIntent = new Intent(MainActivity.this, FaceService.class);
                         MainActivity.this.startService(mIntent);
                         faceStarted = true;
+                        feature4.setChecked(true);
+                        feature4.setClickable(false);
+                        feature4.getTrackDrawable().setColorFilter(Color.GRAY,PorterDuff.Mode.MULTIPLY);
+                        feature4.getThumbDrawable().setColorFilter(Color.LTGRAY,PorterDuff.Mode.MULTIPLY);
                     }
                     if(faceStarted) {
-                        Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
-                        bindService(mIntent, mConnection, BIND_AUTO_CREATE);
-                        MainActivity.this.startService(mIntent);
+                        if(!VehicleService.started) {
+                            Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
+                            bindService(mIntent, mConnection, BIND_AUTO_CREATE);
+                            MainActivity.this.startService(mIntent);
+                        }
                     }
                 }
                 else{
-                    if((!feature4.isChecked())&&(!feature2.isChecked())) {
-                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
-                        MainActivity.this.stopService(mIntent);
+                    if((!feature4.isClickable())&&(!feature2.isChecked())) {
+                       //faceStop();
+                        feature4.setChecked(false);
+                        feature4.setClickable(true);
+                        feature4.getTrackDrawable().clearColorFilter();
+                        feature4.getThumbDrawable().clearColorFilter();
                     }
                     if(VehicleService.started)
                     {
-                        VehicleService.started=false;
-                        // unbindService(mConnection);
-                        vehicleThread.interrupt();
-                        try {
-                            vehicleThread.join();
-                            vehicleThread = null;
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                            System.out.println("InterruptedException while Vehicle Detection join ");
-                        }
-                        System.out.println("Vehicle Detection stopped");
+                        stopVehicle();
                     }
                 }
                 if(feature4.isChecked()){
@@ -387,8 +389,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
                 else{
                     if((!feature2.isChecked())&&(!feature3.isChecked())) {
-                        Intent mIntent = new Intent(MainActivity.this, FaceService.class);
-                        MainActivity.this.stopService(mIntent);
+                        if(faceStarted)
+                         faceStop();
                     }
                 }
             }
@@ -444,7 +446,68 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mBounded = false;
         }
     }
+    public void faceStop(){
+        faceStarted=false;
+        faceThread.interrupt();
+        try {
+            faceThread.join();
+            faceThread = null;
+            Intent mIntent = new Intent(MainActivity.this, FaceService.class);
+            MainActivity.this.stopService(mIntent);
+            System.out.println("Face Detection stopped");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.out.println("InterruptedException while Face Detection join ");
+        }
 
+    }
+
+    public void stopVehicle() {
+        VehicleService.started=false;
+        vehicleThread.interrupt();
+        try {
+            vehicleThread.join();
+            vehicleThread = null;
+            Intent mIntent = new Intent(MainActivity.this, VehicleService.class);
+            MainActivity.this.stopService(mIntent);
+            System.out.println("Vehicle Detection stopped");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.out.println("InterruptedException while Vehicle Detection join ");
+        }
+
+
+    }
+    public void stopLane() {
+        LaneService.started=false;
+        laneThread.interrupt();
+        try {
+            laneThread.join();
+            laneThread = null;
+            Intent mIntent = new Intent(MainActivity.this, LaneService.class);
+            MainActivity.this.stopService(mIntent);
+            System.out.println("Lane Detection stopped");
+        } catch (InterruptedException e) {
+            System.out.println("InterruptedException while Lane Detection join ");
+            e.printStackTrace();
+        }
+
+    }
+    public void stopDetector(){
+        DetectorService.started=false;
+        detectorServiceThread.interrupt();
+        try {
+            detectorServiceThread.join();
+            detectorServiceThread = null;
+            Intent mIntent = new Intent(MainActivity.this, DetectorService.class);
+            MainActivity.this.stopService(mIntent);
+            System.out.println("Sign Detection stopped");
+        } catch (InterruptedException e) {
+            //e.printStackTrace();
+            System.out.println("InterruptedException while Sign Detection join ");
+        }
+        mServer.destroy();
+    }
     public static synchronized void runInBackground(final Runnable r) {
         if (handler != null) {
             handler.post(r);

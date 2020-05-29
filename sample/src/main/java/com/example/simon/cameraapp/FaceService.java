@@ -46,7 +46,7 @@ import static com.example.simon.cameraapp.FrontCameraService.recentPics;
 public class FaceService extends Service {
 
     public IBinder mBinder = new FaceService.LocalBinder();
-    public static boolean started;
+    //public static boolean started;
     static Bitmap data;
     public static boolean notLooking=false;
     public static OkHttpClient client;
@@ -88,12 +88,12 @@ public class FaceService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        System.out.println("başladı");
+        System.out.println("Face başladı");
         host = "142.93.38.174"; ///////////////////ip of digitalocean : 142.93.38.174 /// zeyn local ip 192.168.1.22
         port = 80;
         endpoint = "/predict";
         protocol = "HTTP";
-        started = true;
+       // started = true;
         //initialize empty vehicleList and load alarm sound
         toRemember = new ArrayList();
         mp = MediaPlayer.create(this, R.raw.sample);
@@ -255,8 +255,7 @@ public class FaceService extends Service {
             try {
                 // take the image from the asset folder
                 //String img = "img.jpg";
-                System.out.println("k:" + k);
-                String img = k + ".jpg";
+                System.out.println("face run:" + k);
                 k++;
 
                 Response response = makeRequest();
