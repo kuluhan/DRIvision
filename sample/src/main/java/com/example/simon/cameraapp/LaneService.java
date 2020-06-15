@@ -41,7 +41,7 @@ import static com.example.simon.cameraapp.CameraService.rgbFrameBitmap;
 import static jp.co.recruit_lifestyle.sample.MainActivity.closeAppStopDetection;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.removeLaneIcon;
 import static jp.co.recruit_lifestyle.sample.service.FloatingViewService.showLaneIcon;
-
+import static com.example.simon.cameraapp.FaceService.notLooking;
 
 public class LaneService extends Service {
 
@@ -91,14 +91,14 @@ public class LaneService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         System.out.println("lane başladı");
-        host = "142.93.38.174"; ///////////////////ip of digitalocean : 142.93.38.174 /// zeyn local ip 192.168.1.22
+        host = "134.122.109.247"; ///////////////////ip of digitalocean : 142.93.38.174 /// zeyn local ip 192.168.1.22 //yusufdigital :134.122.109.247
         port = 8000;
         endpoint = "/predict";
         protocol = "HTTP";
         started = true;
         //initialize empty vehicleList and load alarm sound
         toRemember = new ArrayList();
-        mp = MediaPlayer.create(this, R.raw.sample);
+        mp = MediaPlayer.create(this, R.raw.sample2);
         k = 1;
         try {
             url = new URL(protocol, host, port, endpoint);
@@ -238,7 +238,7 @@ public class LaneService extends Service {
                                 .show();
 
                          */
-                        if(!laneIconShow){
+                      //  if(!laneIconShow){
                             Runnable temp1 = new Runnable() {
                                 @Override
                                 public void run() {
@@ -247,18 +247,20 @@ public class LaneService extends Service {
                                 }
                             };
                             handler.post(temp1);
-                            laneIconShow = true;
-                        }
+                          //  laneIconShow = true;
+                       // }
                     }
                     else{
-                        if(centerDist > 0.6){
-                            Toast.makeText(
-                                    LaneService.this,
-                                    "lane switched",
-                                    Toast.LENGTH_LONG)
-                                    .show();
+
+                        if(centerDist > 0.53){
+                           // Toast.makeText( LaneService.this,lane switched",Toast.LENGTH_LONG).show();
+                            if( notLooking)
+                            {
+                                mp.start();
+                            }
+
                         }
-                        if(laneIconShow){
+                       // if(laneIconShow){
                             Runnable temp1 = new Runnable() {
                                 @Override
                                 public void run() {
@@ -267,8 +269,8 @@ public class LaneService extends Service {
                                 }
                             };
                             handler.post(temp1);
-                            laneIconShow = false;
-                        }
+                            //laneIconShow = false;
+                       // }
                     }
 
                 } catch (Exception e) {

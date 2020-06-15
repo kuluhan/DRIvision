@@ -92,8 +92,8 @@ public class CalibrateService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         System.out.println("başladı");
-        host = "142.93.38.174"; ///////////////////ip of digitalocean : 142.93.38.174 /// zeyn local ip 192.168.1.22
-        port = 80;
+        host = "134.122.109.247"; ///////////////////ip of digitalocean : 142.93.38.174 /// zeyn local ip 192.168.1.22
+        port = 8002;
         endpoint = "/calibrate";
         protocol = "HTTP";
         started = true;

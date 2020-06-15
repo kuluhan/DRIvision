@@ -495,7 +495,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
     public void stopDetector(){
         DetectorService.started=false;
-        detectorServiceThread.interrupt();
+/*
+       detectorServiceThread.interrupt();
         try {
             detectorServiceThread.join();
             detectorServiceThread = null;
@@ -506,6 +507,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             //e.printStackTrace();
             System.out.println("InterruptedException while Sign Detection join ");
         }
+*/
         mServer.destroy();
     }
     public static synchronized void runInBackground(final Runnable r) {
@@ -524,7 +526,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 Intent intent = new Intent(MainActivity.this, CameraService.class);
                 bindService(intent, mConnection, BIND_AUTO_CREATE);
                 MainActivity.this.startService(intent);
-
                 Intent intent2 = new Intent(MainActivity.this, FrontCameraService.class);
                 bindService(intent2, mConnection, BIND_AUTO_CREATE);
                 MainActivity.this.startService(intent2);

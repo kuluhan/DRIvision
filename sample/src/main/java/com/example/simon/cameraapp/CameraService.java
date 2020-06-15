@@ -58,7 +58,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     public static Handler imagesaverHandler=   (new Handler());
     public static Lock readLock = lck.readLock();
     public static ReentrantReadWriteLock lck2 =new ReentrantReadWriteLock();
-    List picList;
+   // List picList;
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
     public static Bitmap rgbFrameBitmap = null;
@@ -151,7 +151,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                     @Override
                     public void run() {
                         yuvBytes[0] = data;
-                        DetectorService.yRowStride = previewWidth;
+                       // DetectorService.yRowStride = previewWidth;
                         ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
                         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
                         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
@@ -169,11 +169,9 @@ public class CameraService extends Service implements Camera.PreviewCallback {
                 };
 
         readyForNextImage2();
-
     }
 
     protected int getScreenOrientation() {
-
         WindowManager windowService = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         int currentRatation = windowService.getDefaultDisplay().getRotation();
 
@@ -309,7 +307,7 @@ public class CameraService extends Service implements Camera.PreviewCallback {
     @Override
     public void onCreate() {
         recentPics=  new CopyOnWriteArrayList<Bitmap>();
-        picList =Collections.synchronizedList (recentPics);
+        //picList =Collections.synchronizedList (recentPics);
         System.out.println("niyeeee");
         this.mllFirst = MainActivity.mllFirst;
         System.out.println("mllFirst: " + mllFirst);
@@ -419,13 +417,6 @@ public class CameraService extends Service implements Camera.PreviewCallback {
 
 
 
-        }
-        if (id == 1 && mCamera != null ) {
-            this.mBackServiceCamera.release();
-            this.mBackServiceCamera = null;
-            this.mBackServiceCamera = getCameraInstance(1);
-           // this.mBackSurfaceView = new FrontCameraPreviews(this, this.mBackServiceCamera);
-            //this.mBackSurfaceView.refreshDrawableState();
         }
 
     }

@@ -69,7 +69,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
     public static Lock writeLock2 =lck2.writeLock();
     public static Lock readLock2 = lck2.readLock();
     String[] ImagePath;
-    List picList;
+   // List  picList;
     Camera.PictureCallback mPicture;
     Camera.PictureCallback mPictureBack;
     public static Bitmap rgbFrameBitmap = null;
@@ -158,7 +158,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
                     @Override
                     public void run() {
                         yuvBytes[0] = data;
-                        DetectorService.yRowStride = previewWidth;
+                        //DetectorService.yRowStride = previewWidth;
                         ImageUtils.convertYUV420SPToARGB8888(data, previewWidth, previewHeight, rgbBytes);
                         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
                         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
@@ -333,7 +333,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
 
         //textureView2.setVisibility(View.GONE);
 
-        picList =Collections.synchronizedList (recentPics);
+        //picList =Collections.synchronizedList (recentPics);
 
         int  cameraCount = Camera.getNumberOfCameras();
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
@@ -392,7 +392,7 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
 
         if(noFrontCamera == false)
         {
-            stopCameraPreview(mServiceCamera);
+            stopCameraPreview();
             stopCamera();
         }
         stopBackgroundThread();
@@ -433,12 +433,12 @@ public class FrontCameraService extends Service implements Camera.PreviewCallbac
         return camera;
     }
 
-    private void stopCameraPreview(Camera mCamera) {
-        if (mCamera != null ) {
-            this.mBackServiceCamera.release();
-            this.mBackServiceCamera = null;
-            this.mBackServiceCamera = getCameraInstance(1);
-            this.mBackSurfaceView = new FrontCameraPreviews(this, this.mBackServiceCamera);
+    private void stopCameraPreview() {
+        if (mBackServiceCamera != null ) {
+            mBackServiceCamera.release();
+            mBackServiceCamera = null;
+            mBackServiceCamera = getCameraInstance(1);
+            this.mBackSurfaceView = new FrontCameraPreviews(this, mBackServiceCamera);
             this.mBackSurfaceView.refreshDrawableState();
         }
 
